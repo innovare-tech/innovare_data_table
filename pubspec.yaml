@@ -1,0 +1,39 @@
+name: innovare_data_table
+description: A customizable data table widget for Flutter that supports dynamic theming, responsive layouts, and advanced features like sorting, filtering, and pagination.
+version: 0.0.6
+homepage: https://github.com/innovare-tech/innovare_data_table
+repository: https://github.com/innovare-tech/innovare_data_table
+issue_tracker: https://github.com/innovare-tech/innovare_data_table/issues
+documentation: https://pub.dev/documentation/innovare_data_table/latest/
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 5.0.0
+  mockito: 5.4.4
+
+flutter:
+  uses-material-design: true
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  web:
+  windows:
+
+topics:
+  - data-table
+  - flutter
+  - customizable
+  - responsive
