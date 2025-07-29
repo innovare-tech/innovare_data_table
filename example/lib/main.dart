@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:innovare_data_table_example/pages/empty_table_page.dart';
 import 'package:innovare_data_table_example/pages/products_datatable_example.dart';
 import 'package:innovare_data_table_example/pages/sales_dashboard_page.dart';
 import 'package:innovare_data_table_example/pages/simple_http_test_page.dart';
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
       '/simple_http': (context) => SimpleHttpTestPage(),
       '/products': (context) => ProductsDataTableExample(),
       '/sales-dashboard': (context) => SalesDashboardExample(),
+      '/empty': (context) => EmptyTablePage(),
     },
     home: const InnovareDataTableDemo(),
   );
@@ -68,6 +70,12 @@ class _InnovareDataTableDemoState extends State<InnovareDataTableDemo> {
                 Navigator.pushNamed(context, '/sales-dashboard');
               },
               child: Text("Sales Dashboard")
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/empty');
+              },
+              child: Text("Empty Table Example")
             ),
           ],
         ),

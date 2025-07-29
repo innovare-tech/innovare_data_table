@@ -522,9 +522,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       ),
       child: _getEffectiveIsLoading()
         ? _buildSkeletonLoading(colors, density)
-        : _getEffectiveData().isEmpty
-          ? _buildEmpty(colors)
-          : _buildContent(theme, colors, density, visibleColumns),
+        : _buildContent(theme, colors, density, visibleColumns),
     );
 
     // Wrapping com funcionalidades enhanced
@@ -1354,10 +1352,33 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             ),
           );
         },
-        child: isMobile && widget.mobileConfig != null
-            ? _buildMobileCards(visibleRows, colors)
-            : _buildDesktopTable(theme, colors, density, visibleRows, visibleColumns),
+        child: visibleRows.isEmpty
+            ? _buildEmptyTable(theme, colors, density, visibleColumns)
+            : (isMobile && widget.mobileConfig != null
+                ? _buildMobileCards(visibleRows, colors)
+                : _buildDesktopTable(theme, colors, density, visibleRows, visibleColumns)),
       ),
+    );
+  }
+
+  Widget _buildEmptyTable(
+      InnovareDataTableThemeData theme,
+      DataTableColorScheme colors,
+      DensityConfig density,
+      List<DataColumnConfig<T>> visibleColumns,
+      ) {
+    return AnimatedBuilder(
+      animation: _resizeController,
+      builder: (context, child) {
+        return Column(
+          children: [
+            _buildFixedRegularHeader(theme, colors, density, <T>[], visibleColumns),
+            Expanded(
+              child: _buildEmpty(colors),
+            ),
+          ],
+        );
+      },
     );
   }
 
