@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum DataTableDensity { compact, normal, comfortable }
+enum DataTableDensity { compact, normal, comfortable, custom }
 
 // Sistema de cores padronizado
 class DataTableColorScheme {
@@ -102,6 +102,7 @@ class InnovareDataTableThemeData {
   final double? rowHeight;
   final DataTableDensity density;
   final DataTableColorScheme colorScheme;
+  final DensityConfig? customDensity;
 
   const InnovareDataTableThemeData({
     this.headerBackgroundColor,
@@ -112,7 +113,11 @@ class InnovareDataTableThemeData {
     this.rowHeight,
     this.density = DataTableDensity.normal,
     this.colorScheme = const DataTableColorScheme(),
-  });
+    this.customDensity
+  }) : assert(
+    density != DataTableDensity.custom || customDensity != null,
+    'Custom density must be provided when using DataTableDensity.custom',
+  );
 
   DensityConfig get densityConfig {
     switch (density) {
@@ -122,7 +127,7 @@ class InnovareDataTableThemeData {
         return DensityConfig.comfortable;
       case DataTableDensity.normal:
       default:
-        return DensityConfig.normal;
+        return customDensity!;
     }
   }
 }
