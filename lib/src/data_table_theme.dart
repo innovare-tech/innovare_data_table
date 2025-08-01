@@ -73,6 +73,24 @@ class DensityConfig {
     fontSize: 15,
     headerFontSize: 15,
   );
+
+  copyWith({
+    double? rowHeight,
+    double? headerHeight,
+    EdgeInsets? cellPadding,
+    EdgeInsets? headerPadding,
+    double? fontSize,
+    double? headerFontSize,
+  }) {
+    return DensityConfig(
+      rowHeight: rowHeight ?? this.rowHeight,
+      headerHeight: headerHeight ?? this.headerHeight,
+      cellPadding: cellPadding ?? this.cellPadding,
+      headerPadding: headerPadding ?? this.headerPadding,
+      fontSize: fontSize ?? this.fontSize,
+      headerFontSize: headerFontSize ?? this.headerFontSize,
+    );
+  }
 }
 
 class InnovareDataTableThemeData {
