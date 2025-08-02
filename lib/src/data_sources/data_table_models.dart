@@ -9,7 +9,7 @@ class DataTableRequest {
   final Map<String, dynamic> customParams;
 
   const DataTableRequest({
-    this.page = 0,
+    this.page = 1,
     this.pageSize = 10,
     this.searchTerm,
     this.sorts = const [],
