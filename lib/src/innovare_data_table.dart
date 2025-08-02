@@ -8,6 +8,7 @@ import 'package:innovare_data_table/src/data_table_filters.dart';
 import 'package:innovare_data_table/src/data_table_mobile.dart';
 import 'package:innovare_data_table/src/data_table_responsive.dart';
 import 'package:innovare_data_table/src/data_table_theme.dart';
+import 'package:innovare_data_table/src/extensions/iterable_extensions.dart';
 import 'package:innovare_data_table/src/innovare_stick_data_table.dart';
 import 'package:innovare_data_table/src/pure_resizable_header_cell.dart';
 import 'package:innovare_data_table/src/quick_actions/quick_action_config.dart';
@@ -2265,33 +2266,33 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
   void _handleQuickFilters(Set<String> activeFilterIds) {
     if (_useDataSource && _dataController != null) {
-      // Para DataSource, converter quick filters para filtros padrão
       final currentFilters = List<DataTableFilter>.from(_dataController!.currentRequest.filters);
 
-      // Remover filtros quick existentes (identificados por um prefixo)
-      currentFilters.removeWhere((f) => f.field.startsWith('__quick_'));
+      currentFilters.removeWhere((f) => f.isQuickFilter);
 
-      // Adicionar novos quick filters
       for (final filterId in activeFilterIds) {
         QuickFilter<T>? matchingFilter;
+
         for (final config in _effectiveConfig.quickFiltersConfigs) {
-          matchingFilter = config.filters.firstWhere(
-                (f) => f.id == filterId,
-            orElse: () => null as QuickFilter<T>,
+          matchingFilter = config.filters.firstWhereOrNull(
+            (f) => f.id == filterId,
           );
-          if (matchingFilter != null) break;
+
+          if (matchingFilter != null) {
+            break;
+          }
         }
 
         if (matchingFilter != null) {
           currentFilters.add(DataTableFilter(
-            field: '__quick_${matchingFilter.field}', // Prefixo para identificar
+            field: matchingFilter.field,
             value: matchingFilter.value,
             operator: matchingFilter.operator,
+            type: FilterType.quick
           ));
         }
       }
 
-      // Aplicar filtros atualizados
       final newRequest = _dataController!.currentRequest.copyWith(
         filters: currentFilters,
         page: 1,

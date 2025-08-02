@@ -71,16 +71,26 @@ class DataTableSort {
   });
 }
 
+enum FilterType {
+  quick,
+  advanced,
+}
+
 class DataTableFilter {
   final String field;
   final dynamic value;
   final FilterOperator operator;
+  final FilterType type;
 
   const DataTableFilter({
     required this.field,
     required this.value,
     this.operator = FilterOperator.equals,
+    this.type = FilterType.quick,
   });
+
+  bool get isQuickFilter => type == FilterType.quick;
+  bool get isAdvancedFilter => type == FilterType.advanced;
 }
 
 class DataTableResult<T> {
