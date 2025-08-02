@@ -2038,7 +2038,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final start = (currentPage * pageSize) - (pageSize - 1);
     final end = (start + (pageSize - 1)).clamp(0, totalCount);
     final actualEnd = _useDataSource ?
-    (start + _dataController!.currentData.length) : end;
+    (start + (_dataController!.currentData.length - 1)) : end;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
