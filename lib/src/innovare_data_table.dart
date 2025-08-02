@@ -377,6 +377,54 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     return widget.isLoading;
   }
 
+  int _getEffectiveTotalCount() {
+    if (_useDataSource && _dataController != null) {
+      // Retorna o total do servidor através do controller
+      return _dataController!.totalCount;
+    }
+    // Para dados locais, usa o total filtrado
+    return _getFilteredData().length;
+  }
+
+  int _getEffectiveCurrentPage() {
+    if (_useDataSource && _dataController != null) {
+      // Retorna a página atual do controller (que gerencia a página correta)
+      return _dataController!.currentResult?.page ?? 0;
+    }
+    // Para dados locais, usa a página local
+    return _currentPage;
+  }
+
+  int _getEffectiveTotalPages() {
+    final totalCount = _getEffectiveTotalCount();
+    final pageSize = _getEffectivePageSize();
+    if (totalCount == 0) return 1;
+    return (totalCount / pageSize).ceil();
+  }
+
+  int _getEffectivePageSize() {
+    if (_useDataSource && _dataController != null) {
+      return _dataController!.currentResult?.pageSize ?? widget.pageSize;
+    }
+    return widget.pageSize;
+  }
+
+  bool _getEffectiveHasNextPage() {
+    if (_useDataSource && _dataController != null) {
+      return _dataController!.currentResult?.hasNextPage ?? false;
+    }
+    // Para dados locais
+    return _currentPage < _getEffectiveTotalPages() - 1;
+  }
+
+  bool _getEffectiveHasPreviousPage() {
+    if (_useDataSource && _dataController != null) {
+      return _dataController!.currentResult?.hasPreviousPage ?? false;
+    }
+    // Para dados locais
+    return _currentPage > 0;
+  }
+
   // Métodos de filtragem integrados
   List<T> _getFilteredData() {
     List<T> data = _getEffectiveData();
@@ -548,17 +596,13 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildContent(
-    InnovareDataTableThemeData theme,
-    DataTableColorScheme colors,
-    DensityConfig density,
-    List<DataColumnConfig<T>> visibleColumns,
-  ) {
-    final filtered = _getFilteredData();
-    final start = _currentPage * widget.pageSize;
-    final end = (start + widget.pageSize).clamp(0, filtered.length);
-    final visibleRows = widget.paginationEnabled
-        ? filtered.sublist(start, end)
-        : filtered;
+      InnovareDataTableThemeData theme,
+      DataTableColorScheme colors,
+      DensityConfig density,
+      List<DataColumnConfig<T>> visibleColumns,
+      ) {
+    // Para DataSource, usa dados já paginados; para dados locais, aplica paginação
+    final visibleRows = _getPagedData();
 
     return FadeTransition(
       opacity: _pageFadeAnimation,
@@ -573,7 +617,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 _effectiveConfig.quickFiltersConfigs.isNotEmpty)
               QuickFiltersBar<T>(
                 configs: _effectiveConfig.quickFiltersConfigs,
-                data: filtered,
+                data: _useDataSource ? _dataController!.currentData : _getFilteredData(),
                 activeFilterIds: _activeQuickFilters,
                 onFiltersChanged: (activeIds) {
                   setState(() {
@@ -598,7 +642,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             _buildTable(theme, colors, density, visibleRows, visibleColumns),
 
             if (widget.paginationEnabled)
-              _buildPagination(filtered.length, colors, density),
+              _buildPagination(_getEffectiveTotalCount(), colors, density),
           ],
         ),
       ),
@@ -1030,11 +1074,52 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   void _changePage(int newPage) {
-    setState(() {
-      _currentPage = newPage;
-    });
-    _pageTransitionController.reset();
-    _pageTransitionController.forward();
+    if (_useDataSource && _dataController != null) {
+      // Para DataSource, usa o método do controller que faz a requisição ao servidor
+      _dataController!.goToPage(newPage);
+    } else {
+      // Para dados locais, apenas muda a página local
+      setState(() {
+        _currentPage = newPage;
+      });
+      _pageTransitionController.reset();
+      _pageTransitionController.forward();
+    }
+  }
+
+  void _previousPage() {
+    if (_useDataSource && _dataController != null) {
+      _dataController!.previousPage();
+    } else {
+      if (_currentPage > 0) {
+        _changePage(_currentPage - 1);
+      }
+    }
+  }
+
+  void _nextPage() {
+    if (_useDataSource && _dataController != null) {
+      _dataController!.nextPage();
+    } else {
+      if (_currentPage < _getEffectiveTotalPages() - 1) {
+        _changePage(_currentPage + 1);
+      }
+    }
+  }
+
+  List<T> _getPagedData() {
+    if (_useDataSource && _dataController != null) {
+      // Para DataSource, os dados já vêm paginados do servidor
+      return _dataController!.currentData;
+    }
+
+    // Para dados locais, aplica paginação manual
+    final filtered = _getFilteredData();
+    if (!widget.paginationEnabled) return filtered;
+
+    final start = _currentPage * widget.pageSize;
+    final end = (start + widget.pageSize).clamp(0, filtered.length);
+    return filtered.sublist(start, end);
   }
 
   bool _evaluateAdvancedFilter(dynamic value, ActiveFilter filter) {
@@ -1943,9 +2028,18 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildPagination(int filteredCount, DataTableColorScheme colors, DensityConfig density) {
-    final totalPages = (filteredCount / widget.pageSize).ceil();
-    final start = _currentPage * widget.pageSize;
-    final end = (start + widget.pageSize).clamp(0, filteredCount);
+    final totalCount = _getEffectiveTotalCount();
+    final currentPage = _getEffectiveCurrentPage();
+    final totalPages = _getEffectiveTotalPages();
+    final pageSize = _getEffectivePageSize();
+    final hasNextPage = _getEffectiveHasNextPage();
+    final hasPreviousPage = _getEffectiveHasPreviousPage();
+
+    // Para cálculo de "mostrando X-Y de Z", consideramos a página atual
+    final start = currentPage * pageSize;
+    final end = (start + pageSize).clamp(0, totalCount);
+    final actualEnd = _useDataSource ?
+    (start + _dataController!.currentData.length) : end;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -1961,8 +2055,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: Text(
-              'Mostrando ${start + 1}-${end} de $filteredCount resultados',
-              key: ValueKey('$start-$end-$filteredCount'),
+              'Mostrando ${start + 1}-${actualEnd} de $totalCount resultados',
+              key: ValueKey('$start-$actualEnd-$totalCount'),
               style: TextStyle(
                 fontSize: density.fontSize,
                 color: colors.onSurfaceVariant,
@@ -1975,8 +2069,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Text(
-                  'Página ${_currentPage + 1} de $totalPages',
-                  key: ValueKey('page-${_currentPage + 1}-$totalPages'),
+                  'Página ${currentPage + 1} de $totalPages',
+                  key: ValueKey('page-${currentPage + 1}-$totalPages'),
                   style: TextStyle(
                     fontSize: density.fontSize,
                     color: colors.onSurface,
@@ -1986,36 +2080,36 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               ),
               const SizedBox(width: 16),
               MouseRegion(
-                cursor: _currentPage > 0 ? SystemMouseCursors.click : SystemMouseCursors.forbidden,
+                cursor: hasPreviousPage ? SystemMouseCursors.click : SystemMouseCursors.forbidden,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: _currentPage > 0 ? Colors.transparent : colors.surfaceVariant.withOpacity(0.5),
+                    color: hasPreviousPage ? Colors.transparent : colors.surfaceVariant.withOpacity(0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_left_rounded,
-                      color: _currentPage > 0 ? colors.onSurfaceVariant : colors.onSurfaceVariant.withOpacity(0.5),
+                      color: hasPreviousPage ? colors.onSurfaceVariant : colors.onSurfaceVariant.withOpacity(0.5),
                     ),
-                    onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
+                    onPressed: hasPreviousPage ? _previousPage : null,
                   ),
                 ),
               ),
               MouseRegion(
-                cursor: _currentPage < totalPages - 1 ? SystemMouseCursors.click : SystemMouseCursors.forbidden,
+                cursor: hasNextPage ? SystemMouseCursors.click : SystemMouseCursors.forbidden,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: _currentPage < totalPages - 1 ? Colors.transparent : colors.surfaceVariant.withOpacity(0.5),
+                    color: hasNextPage ? Colors.transparent : colors.surfaceVariant.withOpacity(0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_right_rounded,
-                      color: _currentPage < totalPages - 1 ? colors.onSurfaceVariant : colors.onSurfaceVariant.withOpacity(0.5),
+                      color: hasNextPage ? colors.onSurfaceVariant : colors.onSurfaceVariant.withOpacity(0.5),
                     ),
-                    onPressed: _currentPage < totalPages - 1 ? () => _changePage(_currentPage + 1) : null,
+                    onPressed: hasNextPage ? _nextPage : null,
                   ),
                 ),
               ),
@@ -2024,6 +2118,56 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         ],
       ),
     );
+  }
+
+  void _handleSort(String field, bool ascending) {
+    if (_useDataSource && _dataController != null) {
+      // Para DataSource, usa o método do controller
+      _dataController!.sort(field, ascending);
+    } else {
+      // Para dados locais, aplica ordenação local
+      setState(() {
+        _sortedField = field;
+        _isAscending = ascending;
+        widget.onSort?.call(field, ascending);
+      });
+    }
+  }
+
+  void _handleSearch(String searchTerm) {
+    if (_useDataSource && _dataController != null) {
+      // Para DataSource, usa o método do controller
+      _dataController!.search(searchTerm);
+    } else {
+      // Para dados locais, aplica busca local
+      setState(() {
+        if (searchTerm.isEmpty) {
+          _filters.remove('__global');
+        } else {
+          _filters['__global'] = searchTerm;
+        }
+      });
+    }
+  }
+
+  void _handleFilter(String field, dynamic value) {
+    if (_useDataSource && _dataController != null) {
+      // Para DataSource, usa o método do controller
+      if (value == null || value.toString().isEmpty) {
+        _dataController!.removeFilter(field);
+      } else {
+        _dataController!.addFilter(field, value);
+      }
+    } else {
+      // Para dados locais, aplica filtro local
+      setState(() {
+        if (value == null || value.toString().isEmpty) {
+          _columnFilters.remove(field);
+        } else {
+          _columnFilters[field] = value;
+        }
+      });
+    }
   }
 
   Widget _buildEmpty(DataTableColorScheme colors) {
