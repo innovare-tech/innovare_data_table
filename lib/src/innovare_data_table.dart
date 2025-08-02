@@ -2294,7 +2294,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       // Aplicar filtros atualizados
       final newRequest = _dataController!.currentRequest.copyWith(
         filters: currentFilters,
-        page: 0, // Reset para primeira página
+        page: 1,
       );
 
       _dataController!.fetchData(newRequest);
