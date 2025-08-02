@@ -2036,7 +2036,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final hasPreviousPage = _getEffectiveHasPreviousPage();
 
     final start = (currentPage * pageSize) - (pageSize - 1);
-    final end = (start + pageSize).clamp(0, totalCount);
+    final end = (start + (pageSize - 1)).clamp(0, totalCount);
     final actualEnd = _useDataSource ?
     (start + _dataController!.currentData.length) : end;
 
@@ -2054,7 +2054,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: Text(
-              'Mostrando ${start + 1}-${actualEnd} de $totalCount resultados',
+              'Mostrando ${start}-${actualEnd} de $totalCount resultados',
               key: ValueKey('$start-$actualEnd-$totalCount'),
               style: TextStyle(
                 fontSize: density.fontSize,
