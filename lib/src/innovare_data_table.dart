@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide DataTableSource;
 import 'package:flutter/services.dart';
+import 'package:innovare_data_table/innovare_data_table.dart';
 import 'package:innovare_data_table/src/data_column_config.dart';
 import 'package:innovare_data_table/src/data_sources/data_table_controller.dart';
 import 'package:innovare_data_table/src/data_sources/data_table_source.dart';
@@ -496,8 +497,97 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   List<T> _applyQuickFilters(List<T> data) {
-    // TODO: Implementar lógica de quick filters quando os componentes estiverem disponíveis
-    return data;
+    var filteredData = data;
+
+    for (final filterId in _activeQuickFilters) {
+      // Encontrar o filtro correspondente em todas as configurações
+      QuickFilter<T>? matchingFilter;
+      for (final config in _effectiveConfig.quickFiltersConfigs) {
+        matchingFilter = config.filters.firstWhere(
+              (f) => f.id == filterId,
+          orElse: () => null as QuickFilter<T>,
+        );
+        if (matchingFilter != null) break;
+      }
+
+      if (matchingFilter != null) {
+        filteredData = filteredData.where((item) {
+          return _evaluateQuickFilter(item, matchingFilter!);
+        }).toList();
+      }
+    }
+
+    return filteredData;
+  }
+
+  bool _evaluateQuickFilter(T item, QuickFilter<T> filter) {
+    // Se há um countGetter customizado, usar a lógica do config
+    if (filter.countGetter != null) {
+      // Para countGetter, assumimos que se retorna > 0, o item corresponde
+      try {
+        return filter.countGetter!([item]) > 0;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Obter valor do campo
+    dynamic itemValue;
+
+    // Tentar usar enhanced search fieldGetter primeiro
+    if (_effectiveConfig.searchConfig?.fieldGetter != null) {
+      try {
+        itemValue = _effectiveConfig.searchConfig!.fieldGetter!(item, filter.field);
+      } catch (e) {
+        // Fallback para coluna correspondente
+        itemValue = _getItemValueFromColumn(item, filter.field);
+      }
+    } else {
+      itemValue = _getItemValueFromColumn(item, filter.field);
+    }
+
+    // Aplicar operador do filtro
+    switch (filter.operator) {
+      case FilterOperator.equals:
+        return itemValue?.toString().toLowerCase() ==
+            filter.value?.toString().toLowerCase();
+
+      case FilterOperator.contains:
+        return itemValue?.toString().toLowerCase()
+            .contains(filter.value?.toString().toLowerCase() ?? '') ?? false;
+
+      case FilterOperator.between:
+        if (filter.value is Map<String, DateTime>) {
+          final range = filter.value as Map<String, DateTime>;
+          final start = range['start'];
+          final end = range['end'];
+
+          if (itemValue is DateTime && start != null && end != null) {
+            return itemValue.isAfter(start.subtract(const Duration(days: 1))) &&
+                itemValue.isBefore(end.add(const Duration(days: 1)));
+          }
+        }
+        return false;
+
+      default:
+        return itemValue?.toString().toLowerCase() ==
+            filter.value?.toString().toLowerCase();
+    }
+  }
+
+  dynamic _getItemValueFromColumn(T item, String field) {
+    // Procurar coluna correspondente
+    final column = widget.columns.firstWhere(
+          (col) => col.field == field,
+      orElse: () => null as DataColumnConfig<T>,
+    );
+
+    if (column != null) {
+      return column.valueGetter(item);
+    }
+
+    // Fallback: tentar acessar campo por toString
+    return item.toString();
   }
 
   List<T> _applyAdvancedFilters(List<T> data) {
@@ -620,9 +710,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 data: _useDataSource ? _dataController!.currentData : _getFilteredData(),
                 activeFilterIds: _activeQuickFilters,
                 onFiltersChanged: (activeIds) {
-                  setState(() {
-                    _activeQuickFilters = activeIds;
-                  });
+                  _handleQuickFilters(activeIds);
                 },
                 colors: colors,
               ),
@@ -2140,10 +2228,16 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     } else {
       // Para dados locais, aplica busca local
       setState(() {
-        if (searchTerm.isEmpty) {
-          _filters.remove('__global');
+        if (_effectiveConfig.searchConfig != null) {
+          // Enhanced search
+          _searchTerm = searchTerm;
         } else {
-          _filters['__global'] = searchTerm;
+          // Busca básica (compatibilidade)
+          if (searchTerm.isEmpty) {
+            _filters.remove('__global');
+          } else {
+            _filters['__global'] = searchTerm;
+          }
         }
       });
     }
@@ -2165,6 +2259,49 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         } else {
           _columnFilters[field] = value;
         }
+      });
+    }
+  }
+
+  void _handleQuickFilters(Set<String> activeFilterIds) {
+    if (_useDataSource && _dataController != null) {
+      // Para DataSource, converter quick filters para filtros padrão
+      final currentFilters = List<DataTableFilter>.from(_dataController!.currentRequest.filters);
+
+      // Remover filtros quick existentes (identificados por um prefixo)
+      currentFilters.removeWhere((f) => f.field.startsWith('__quick_'));
+
+      // Adicionar novos quick filters
+      for (final filterId in activeFilterIds) {
+        QuickFilter<T>? matchingFilter;
+        for (final config in _effectiveConfig.quickFiltersConfigs) {
+          matchingFilter = config.filters.firstWhere(
+                (f) => f.id == filterId,
+            orElse: () => null as QuickFilter<T>,
+          );
+          if (matchingFilter != null) break;
+        }
+
+        if (matchingFilter != null) {
+          currentFilters.add(DataTableFilter(
+            field: '__quick_${matchingFilter.field}', // Prefixo para identificar
+            value: matchingFilter.value,
+            operator: matchingFilter.operator,
+          ));
+        }
+      }
+
+      // Aplicar filtros atualizados
+      final newRequest = _dataController!.currentRequest.copyWith(
+        filters: currentFilters,
+        page: 0, // Reset para primeira página
+      );
+
+      _dataController!.fetchData(newRequest);
+    } else {
+      // Para dados locais, apenas atualizar estado
+      setState(() {
+        _activeQuickFilters = activeFilterIds;
       });
     }
   }
