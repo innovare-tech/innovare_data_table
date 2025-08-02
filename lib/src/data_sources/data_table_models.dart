@@ -98,7 +98,7 @@ class DataTableResult<T> {
     this.metadata,
   });
 
-  bool get hasNextPage => (page + 1) * pageSize < totalCount;
+  bool get hasNextPage => page * pageSize < totalCount;
   bool get hasPreviousPage => page > 0;
   int get totalPages => (totalCount / pageSize).ceil();
 
