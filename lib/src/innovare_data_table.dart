@@ -2035,7 +2035,6 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final hasNextPage = _getEffectiveHasNextPage();
     final hasPreviousPage = _getEffectiveHasPreviousPage();
 
-    // Para cálculo de "mostrando X-Y de Z", consideramos a página atual
     final start = currentPage * pageSize;
     final end = (start + pageSize).clamp(0, totalCount);
     final actualEnd = _useDataSource ?
@@ -2069,8 +2068,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Text(
-                  'Página ${currentPage + 1} de $totalPages',
-                  key: ValueKey('page-${currentPage + 1}-$totalPages'),
+                  'Página ${currentPage} de $totalPages',
+                  key: ValueKey('page-${currentPage}-$totalPages'),
                   style: TextStyle(
                     fontSize: density.fontSize,
                     color: colors.onSurface,
