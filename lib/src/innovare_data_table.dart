@@ -2035,7 +2035,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final hasNextPage = _getEffectiveHasNextPage();
     final hasPreviousPage = _getEffectiveHasPreviousPage();
 
-    final start = currentPage * pageSize;
+    final start = (currentPage * pageSize) - (pageSize - 1);
     final end = (start + pageSize).clamp(0, totalCount);
     final actualEnd = _useDataSource ?
     (start + _dataController!.currentData.length) : end;
