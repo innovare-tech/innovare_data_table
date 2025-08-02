@@ -126,6 +126,7 @@ class InnovareDataTableThemeData {
       case DataTableDensity.comfortable:
         return DensityConfig.comfortable;
       case DataTableDensity.normal:
+        return DensityConfig.normal;
       default:
         return customDensity!;
     }
