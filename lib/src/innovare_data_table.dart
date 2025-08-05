@@ -9,6 +9,9 @@ import 'package:innovare_data_table/src/data_table_mobile.dart';
 import 'package:innovare_data_table/src/data_table_responsive.dart';
 import 'package:innovare_data_table/src/data_table_theme.dart';
 import 'package:innovare_data_table/src/extensions/iterable_extensions.dart';
+import 'package:innovare_data_table/src/filters/filter_models.dart';
+import 'package:innovare_data_table/src/filters/unified_filters_bar.dart';
+import 'package:innovare_data_table/src/filters/unified_filters_controller.dart';
 import 'package:innovare_data_table/src/innovare_stick_data_table.dart';
 import 'package:innovare_data_table/src/pure_resizable_header_cell.dart';
 import 'package:innovare_data_table/src/quick_actions/quick_action_config.dart';
@@ -113,6 +116,8 @@ class InnovareDataTableConfig<T> {
   final Function(T item, String action)? onItemAction;
   final Future<void> Function()? onRefresh;
 
+  final UnifiedFiltersConfig<T>? unifiedFiltersConfig;
+
   const InnovareDataTableConfig({
     this.enableSearch = true,
     this.enableQuickFilters = false,
@@ -129,12 +134,31 @@ class InnovareDataTableConfig<T> {
     this.onBulkAction,
     this.onItemAction,
     this.onRefresh,
+    this.unifiedFiltersConfig,
   });
 
   factory InnovareDataTableConfig.simple() {
     return const InnovareDataTableConfig(
       enableQuickFilters: false,
       enableSmartLoading: false,
+    );
+  }
+
+  factory InnovareDataTableConfig.withUnifiedFilters({
+    List<QuickFiltersConfig<T>> quickFilters = const [],
+    List<AdvancedFilterConfig<T>> advancedFilters = const [],
+    List<String> searchFields = const [],
+    String Function(T item, String field)? fieldGetter,
+  }) {
+    return InnovareDataTableConfig<T>(
+      unifiedFiltersConfig: UnifiedFiltersConfig<T>.full(
+        quickFilters: quickFilters,
+        advancedFilters: advancedFilters,
+        searchFields: searchFields,
+        fieldGetter: fieldGetter,
+      ),
+      enableQuickFilters: false,
+      enableAdvancedFilters: false,
     );
   }
 }
@@ -299,6 +323,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   // Configuração efetiva
   late InnovareDataTableConfig<T> _effectiveConfig;
 
+  UnifiedFiltersController<T>? _unifiedFiltersController;
+
   @override
   void initState() {
     super.initState();
@@ -325,6 +351,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     });
 
     _setupDataSource();
+
+    if (_effectiveConfig.unifiedFiltersConfig != null) {
+      _unifiedFiltersController = UnifiedFiltersController<T>(
+        config: _effectiveConfig.unifiedFiltersConfig!,
+        dataTableController: _dataController,
+        fieldGetter: _effectiveConfig.unifiedFiltersConfig!.fieldGetter,
+      );
+    }
   }
 
   // Inicializar funcionalidades enhanced (opcionais)
@@ -344,6 +378,27 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         config: _effectiveConfig.loadingConfig ?? const LoadingConfiguration(),
       );
     }
+
+    // Inicializar filtros padrão
+    _initializeDefaultQuickFilters();
+  }
+
+  void _initializeDefaultQuickFilters() {
+    if (_effectiveConfig.enableQuickFilters) {
+      for (final config in _effectiveConfig.quickFiltersConfigs) {
+        for (final filter in config.filters) {
+          if (filter.isDefault) {
+            _activeQuickFilters.add(filter.id);
+          }
+        }
+      }
+
+      // Aplicar filtros padrão se existirem
+      if (_activeQuickFilters.isNotEmpty) {
+        // Para dados locais, apenas atualizar o estado
+        // Para DataSource, será aplicado no _setupDataSource()
+      }
+    }
   }
 
   void _setupDataSource() {
@@ -354,7 +409,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       _dataController!.addListener(_onDataSourceChanged);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _dataController!.fetchData();
+        // Aplicar filtros padrão se existirem
+        if (_activeQuickFilters.isNotEmpty) {
+          _handleQuickFilters(_activeQuickFilters);
+        } else {
+          _dataController!.fetchData();
+        }
       });
     }
   }
@@ -477,20 +537,26 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final config = _effectiveConfig.searchConfig;
     if (config == null) return true;
 
+    // ✅ Se termo vazio, mostrar todos os itens
+    if (term.trim().isEmpty) return true;
+
+    final searchTerm = term.toLowerCase().trim();
+
     for (final field in config.searchFields) {
       String? value;
       if (config.fieldGetter != null) {
         value = config.fieldGetter!(item, field);
       } else {
         // Fallback: procurar coluna correspondente
-        final column = widget.columns.firstWhere(
+        final column = widget.columns.firstWhereOrNull(
               (col) => col.field == field,
-          orElse: () => widget.columns.first,
         );
-        value = column.valueGetter(item).toString();
+        if (column != null) {
+          value = column.valueGetter(item).toString();
+        }
       }
 
-      if (value.toLowerCase().contains(term.toLowerCase())) {
+      if (value != null && value.toLowerCase().contains(searchTerm)) {
         return true;
       }
     }
@@ -504,9 +570,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       // Encontrar o filtro correspondente em todas as configurações
       QuickFilter<T>? matchingFilter;
       for (final config in _effectiveConfig.quickFiltersConfigs) {
-        matchingFilter = config.filters.firstWhere(
+        matchingFilter = config.filters.firstWhereOrNull(
               (f) => f.id == filterId,
-          orElse: () => null as QuickFilter<T>,
         );
         if (matchingFilter != null) break;
       }
@@ -578,9 +643,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
   dynamic _getItemValueFromColumn(T item, String field) {
     // Procurar coluna correspondente
-    final column = widget.columns.firstWhere(
+    final column = widget.columns.firstWhereOrNull(
           (col) => col.field == field,
-      orElse: () => null as DataColumnConfig<T>,
     );
 
     if (column != null) {
@@ -659,9 +723,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           ),
         ],
       ),
-      child: _getEffectiveIsLoading()
-        ? _buildSkeletonLoading(colors, density)
-        : _buildContent(theme, colors, density, visibleColumns),
+      child: _buildContent(theme, colors, density, visibleColumns),
     );
 
     // Wrapping com funcionalidades enhanced
@@ -692,9 +754,6 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       DensityConfig density,
       List<DataColumnConfig<T>> visibleColumns,
       ) {
-    // Para DataSource, usa dados já paginados; para dados locais, aplica paginação
-    final visibleRows = _getPagedData();
-
     return FadeTransition(
       opacity: _pageFadeAnimation,
       child: SlideTransition(
@@ -702,8 +761,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top section sempre visível
             _buildTopSection(theme, colors, density),
 
+            // Quick filters sempre visível
             if (_effectiveConfig.enableQuickFilters &&
                 _effectiveConfig.quickFiltersConfigs.isNotEmpty)
               QuickFiltersBar<T>(
@@ -711,15 +772,19 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 data: _useDataSource ? _dataController!.currentData : _getFilteredData(),
                 activeFilterIds: _activeQuickFilters,
                 onFiltersChanged: (activeIds) {
+                  print('🔥 CALLBACK RECEBIDO: $activeIds');
+                  print('🔥 ESTADO ATUAL: $_activeQuickFilters');
                   _handleQuickFilters(activeIds);
                 },
                 colors: colors,
               ),
 
+            // Filter pills sempre visível
             if ((_activeQuickFilters.isNotEmpty || _advancedFilters.isNotEmpty) &&
                 (_effectiveConfig.enableQuickFilters || widget.advancedFilters.isNotEmpty))
               _buildFilterPills(colors),
 
+            // Selection bar sempre visível
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               height: widget.enableSelection && _selectedItems.isNotEmpty ? null : 0,
@@ -728,13 +793,156 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   : const SizedBox.shrink(),
             ),
 
-            _buildTable(theme, colors, density, visibleRows, visibleColumns),
+            // APENAS A ÁREA DA TABELA COM LOADING
+            Expanded(
+              child: _buildTableWithLoading(theme, colors, density, visibleColumns),
+            ),
 
+            // Paginação sempre visível
             if (widget.paginationEnabled)
               _buildPagination(_getEffectiveTotalCount(), colors, density),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTableWithLoading(
+      InnovareDataTableThemeData theme,
+      DataTableColorScheme colors,
+      DensityConfig density,
+      List<DataColumnConfig<T>> visibleColumns,
+      ) {
+    if (_getEffectiveIsLoading()) {
+      return _buildSkeletonTableContent(colors, density, visibleColumns);
+    }
+
+    // Para DataSource, usa dados já paginados; para dados locais, aplica paginação
+    final visibleRows = _getPagedData();
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.1, 0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            )),
+            child: child,
+          ),
+        );
+      },
+      child: visibleRows.isEmpty
+          ? _buildEmptyTable(theme, colors, density, visibleColumns)
+          : (ResponsiveTableManager.isMobile(context) && widget.mobileConfig != null
+          ? _buildMobileCards(visibleRows, colors)
+          : _buildDesktopTable(theme, colors, density, visibleRows, visibleColumns)),
+    );
+  }
+
+  Widget _buildSkeletonTableContent(
+      DataTableColorScheme colors,
+      DensityConfig density,
+      List<DataColumnConfig<T>> visibleColumns,
+      ) {
+    return Column(
+      children: [
+        // Header da tabela
+        Container(
+          height: density.headerHeight,
+          decoration: BoxDecoration(
+            color: colors.surfaceVariant,
+            border: Border(bottom: BorderSide(color: colors.outline, width: 0.5)),
+          ),
+          padding: density.headerPadding,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              final selectionWidth = widget.enableSelection ? 60.0 : 0.0;
+              final remainingWidth = availableWidth - selectionWidth;
+              final columnWidth = 200.0;
+              final maxColumns = (remainingWidth / columnWidth).floor().clamp(1, visibleColumns.length);
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    if (widget.enableSelection) ...[
+                      Container(
+                        width: 60,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SkeletonLoader(width: 20, height: 20, borderRadius: BorderRadius.circular(3)),
+                      ),
+                    ],
+                    ...List.generate(maxColumns, (index) => Container(
+                      width: columnWidth,
+                      padding: const EdgeInsets.only(right: 16),
+                      child: SkeletonLoader(
+                        width: 120,
+                        height: 16,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    )),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Body da tabela com skeleton
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              final selectionWidth = widget.enableSelection ? 60.0 : 0.0;
+              final remainingWidth = availableWidth - selectionWidth;
+              final columnWidth = 200.0;
+              final maxColumns = (remainingWidth / columnWidth).floor().clamp(1, visibleColumns.length);
+
+              return ListView.builder(
+                itemCount: widget.pageSize.clamp(0, 8), // Menos linhas para economizar espaço
+                itemBuilder: (context, index) => Container(
+                  height: density.rowHeight,
+                  decoration: BoxDecoration(
+                    color: index.isEven ? colors.surface : colors.surfaceVariant.withOpacity(0.3),
+                    border: Border(bottom: BorderSide(color: colors.outline.withOpacity(0.3), width: 0.5)),
+                  ),
+                  padding: density.cellPadding,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        if (widget.enableSelection) ...[
+                          Container(
+                            width: 60,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: SkeletonLoader(width: 20, height: 20, borderRadius: BorderRadius.circular(3)),
+                          ),
+                        ],
+                        ...List.generate(maxColumns, (index) => Container(
+                          width: columnWidth,
+                          padding: const EdgeInsets.only(right: 16),
+                          child: SkeletonLoader(
+                            width: double.infinity,
+                            height: 14,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        )),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -790,7 +998,18 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           ],
 
           // Controls
-          isMobile ? _buildMobileControls(colors) : _buildDesktopControls(colors),
+          if (_unifiedFiltersController != null)
+            UnifiedFiltersBar<T>(
+              controller: _unifiedFiltersController!,
+              data: widget.rows,
+              colors: colors,
+              quickActions: widget.quickActions.map((action) =>
+                  _buildQuickActionButton(action, colors)
+              ).toList(),
+            )
+          else
+          // Sistema antigo (manter compatibilidade)
+            isMobile ? _buildMobileControls(colors) : _buildDesktopControls(colors),
         ],
       ),
     );
@@ -836,6 +1055,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       ],
     );
   }
+
 
   Widget _buildDesktopControls(DataTableColorScheme colors) {
     return Row(
@@ -923,14 +1143,27 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         data: widget.rows,
         initialValue: _searchTerm,
         onChanged: (value) {
+          // ✅ CORREÇÃO: Handle tanto valor vazio quanto preenchido
+          final trimmedValue = value.trim();
           setState(() {
-            _searchTerm = value;
+            _searchTerm = trimmedValue;
           });
+
+          // ✅ Para DataSource, chamar método de busca mesmo quando vazio
+          if (_useDataSource && _dataController != null) {
+            _dataController!.search(trimmedValue);
+          }
         },
         onClear: () {
+          // ✅ CORREÇÃO: Garantir que limpa completamente
           setState(() {
             _searchTerm = '';
           });
+
+          // ✅ Para DataSource, limpar busca no servidor
+          if (_useDataSource && _dataController != null) {
+            _dataController!.search('');
+          }
         },
         colors: colors,
       );
@@ -971,16 +1204,40 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
     // Quick filter pills
     for (final filterId in _activeQuickFilters) {
-      // TODO: Implementar quando QuickFilter estiver disponível
+      QuickFilter<T>? matchingFilter;
+      String? groupLabel;
+
+      for (final config in _effectiveConfig.quickFiltersConfigs) {
+        matchingFilter = config.filters.firstWhereOrNull(
+              (f) => f.id == filterId,
+        );
+        if (matchingFilter != null) {
+          groupLabel = config.groupLabel;
+          break;
+        }
+      }
+
+      if (matchingFilter != null) {
+        pills.add(FilterPill(
+          id: matchingFilter.id,
+          field: matchingFilter.field,
+          label: groupLabel ?? matchingFilter.field,
+          displayText: matchingFilter.label,
+          value: matchingFilter.value,
+          operator: matchingFilter.operator,
+          color: matchingFilter.color,
+        ));
+      }
     }
 
-    // Advanced filter pills
+    // Advanced filter pills (resto permanece igual)
     for (final filter in _advancedFilters.where((f) => f.isActive)) {
-      final config = _effectiveConfig.advancedFiltersConfigs.firstWhere(
+      final config = _effectiveConfig.advancedFiltersConfigs.firstWhereOrNull(
             (c) => c.field == filter.field,
-        orElse: () => widget.advancedFilters.first,
       );
-      pills.add(FilterPill.fromActiveFilter(filter, config.label));
+      if (config != null) {
+        pills.add(FilterPill.fromActiveFilter(filter, config.label));
+      }
     }
 
     if (pills.isEmpty) return const SizedBox.shrink();
@@ -989,7 +1246,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       pills: pills,
       onRemovePill: (pillId) {
         setState(() {
-          _activeQuickFilters.remove(pillId);
+          // Remover de quick filters
+          if (_activeQuickFilters.contains(pillId)) {
+            _activeQuickFilters.remove(pillId);
+            _handleQuickFilters(_activeQuickFilters);
+            return;
+          }
+
+          // Remover de advanced filters
           _advancedFilters.removeWhere((f) =>
           '${f.field}_${f.value}' == pillId);
         });
@@ -998,6 +1262,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         setState(() {
           _activeQuickFilters.clear();
           _advancedFilters.clear();
+          _handleQuickFilters(_activeQuickFilters);
         });
       },
       colors: colors,
@@ -2265,30 +2530,33 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   void _handleQuickFilters(Set<String> activeFilterIds) {
-    if (_useDataSource && _dataController != null) {
-      final currentFilters = List<DataTableFilter>.from(_dataController!.currentRequest.filters);
+    print('🔥 HANDLE QUICK FILTERS: $activeFilterIds');
+    print('🔥 USE DATA SOURCE: $_useDataSource');
 
+    if (_useDataSource && _dataController != null) {
+      // Para DataSource
+      print('🔥 PROCESSANDO COM DATA SOURCE...');
+      final currentFilters = List<DataTableFilter>.from(_dataController!.currentRequest.filters);
       currentFilters.removeWhere((f) => f.isQuickFilter);
 
       for (final filterId in activeFilterIds) {
         QuickFilter<T>? matchingFilter;
 
         for (final config in _effectiveConfig.quickFiltersConfigs) {
-          matchingFilter = config.filters.firstWhereOrNull(
-            (f) => f.id == filterId,
-          );
-
-          if (matchingFilter != null) {
+          try {
+            matchingFilter = config.filters.firstWhere((f) => f.id == filterId);
             break;
+          } catch (e) {
+            continue;
           }
         }
 
-        if (matchingFilter != null) {
+        if (matchingFilter != null && matchingFilter.value != null) {
           currentFilters.add(DataTableFilter(
-            field: matchingFilter.field,
-            value: matchingFilter.value,
-            operator: matchingFilter.operator,
-            type: FilterType.quick
+              field: matchingFilter.field,
+              value: matchingFilter.value,
+              operator: matchingFilter.operator,
+              type: FilterType.quick
           ));
         }
       }
@@ -2298,12 +2566,19 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         page: 1,
       );
 
-      _dataController!.fetchData(newRequest);
-    } else {
-      // Para dados locais, apenas atualizar estado
+      // 🔥 CORREÇÃO: ATUALIZAR O ESTADO LOCAL TAMBÉM!
       setState(() {
         _activeQuickFilters = activeFilterIds;
       });
+
+      _dataController!.fetchData(newRequest);
+    } else {
+      // Para dados locais
+      print('🔥 ATUALIZANDO ESTADO LOCAL...');
+      setState(() {
+        _activeQuickFilters = activeFilterIds;
+      });
+      print('🔥 NOVO ESTADO: $_activeQuickFilters');
     }
   }
 

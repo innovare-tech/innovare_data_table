@@ -114,13 +114,17 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
   void _onTextChanged() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(Duration(milliseconds: widget.config.debounceMs), () {
-      final text = _controller.text;
+      final text = _controller.text.trim(); // ✅ Trim para evitar espaços vazios
+
+      // ✅ SEMPRE chama onChanged, mesmo quando vazio
       widget.onChanged(text);
 
       if (_focusNode.hasFocus) {
         _generateSuggestions();
         if (text.isNotEmpty) {
           _showSuggestionsOverlay();
+        } else {
+          _hideSuggestionsOverlay();
         }
       }
     });
@@ -375,7 +379,7 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
           borderSide: BorderSide(color: widget.colors.primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        suffixIcon: _controller.text.isNotEmpty
+        suffixIcon: _controller.text.trim().isNotEmpty // ✅ Usar trim()
             ? IconButton(
           icon: Icon(
             Icons.clear_rounded,
@@ -384,6 +388,7 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
           ),
           onPressed: () {
             _controller.clear();
+            widget.onChanged(''); // ✅ Chamar onChanged com string vazia
             widget.onClear?.call();
             _generateSuggestions();
           },

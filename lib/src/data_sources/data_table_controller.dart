@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:innovare_data_table/innovare_data_table.dart';
 import 'package:innovare_data_table/src/data_table_filters.dart';
 
 import 'data_table_models.dart';
@@ -42,13 +43,21 @@ class DataTableController<T> extends ChangeNotifier {
     _setError(null);
 
     try {
-      // Verificar cache primeiro
+      var cacheable = false;
+
+      if (_dataSource is HttpDataTableSource) {
+        cacheable = (_dataSource as HttpDataTableSource).enableCache;
+      }
+
       final cacheKey = _generateCacheKey(targetRequest);
-      if (_cache.containsKey(cacheKey)) {
-        _currentResult = _cache[cacheKey];
-        _currentRequest = targetRequest;
-        _setLoading(false);
-        return;
+
+      if (cacheable) {
+        if (_cache.containsKey(cacheKey)) {
+          _currentResult = _cache[cacheKey];
+          _currentRequest = targetRequest;
+          _setLoading(false);
+          return;
+        }
       }
 
       // Buscar do servidor
@@ -57,7 +66,9 @@ class DataTableController<T> extends ChangeNotifier {
       // Atualizar estado
       _currentResult = result;
       _currentRequest = targetRequest;
-      _cache[cacheKey] = result;
+      if (cacheable) {
+        _cache[cacheKey] = result;
+      }
 
       _setLoading(false);
     } catch (e) {
@@ -92,7 +103,7 @@ class DataTableController<T> extends ChangeNotifier {
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       final newRequest = _currentRequest.copyWith(
         searchTerm: term.isEmpty ? null : term,
-        page: 0, // Reset para primeira página
+        page: 1, // Reset para primeira página
       );
       fetchData(newRequest);
     });
@@ -157,7 +168,7 @@ class DataTableController<T> extends ChangeNotifier {
     final newRequest = _currentRequest.copyWith(
       filters: [],
       searchTerm: null,
-      page: 0,
+      page: 1,
     );
 
     await fetchData(newRequest);
