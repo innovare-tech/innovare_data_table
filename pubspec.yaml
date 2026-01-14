@@ -20,7 +20,7 @@ dependencies:
       ref: main
   innovare_core:
     git:
-      url: git@github.com:innovare-tech/lib-innv-core.git
+      url: https://github.com/innovare-tech/lib-innv-core.git
       ref: feature/nova_versao
 
 dev_dependencies:
