@@ -404,8 +404,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   void _setupDataSource() {
     if (widget.dataSource != null) {
       _useDataSource = true;
-      _dataController =
-          widget.controller ??
+      _dataController = widget.controller ??
           DataTableController<T>(dataSource: widget.dataSource!);
       _dataController!.addListener(_onDataSourceChanged);
 
@@ -627,8 +626,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
       case FilterOperator.contains:
         return itemValue?.toString().toLowerCase().contains(
-              filter.value?.toString().toLowerCase() ?? '',
-            ) ??
+                  filter.value?.toString().toLowerCase() ?? '',
+                ) ??
             false;
 
       case FilterOperator.between:
@@ -666,9 +665,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     var filtered = data;
 
     for (final filter in _advancedFilters.where((f) => f.isActive)) {
-      final column = widget.columns
-          .where((c) => c.field == filter.field)
-          .firstOrNull;
+      final column =
+          widget.columns.where((c) => c.field == filter.field).firstOrNull;
       if (column == null) continue;
 
       filtered = filtered.where((item) {
@@ -710,9 +708,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final density = theme.densityConfig;
     final colors = theme.colorScheme;
 
-    final columnsToUse = widget.enableColumnDragDrop
-        ? _orderedColumns
-        : widget.columns;
+    final columnsToUse =
+        widget.enableColumnDragDrop ? _orderedColumns : widget.columns;
     final visibleColumns = _getVisibleColumns(
       context,
       columnsToUse,
@@ -848,16 +845,15 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         return FadeTransition(
           opacity: animation,
           child: SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(0.1, 0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
+            position: Tween<Offset>(
+              begin: const Offset(0.1, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ),
+            ),
             child: child,
           ),
         );
@@ -865,15 +861,15 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       child: visibleRows.isEmpty
           ? _buildEmptyTable(theme, colors, density, visibleColumns)
           : (ResponsiveTableManager.isMobile(context) &&
-                    widget.mobileConfig != null
-                ? _buildMobileCards(visibleRows, colors)
-                : _buildDesktopTable(
-                    theme,
-                    colors,
-                    density,
-                    visibleRows,
-                    visibleColumns,
-                  )),
+                  widget.mobileConfig != null
+              ? _buildMobileCards(visibleRows, colors)
+              : _buildDesktopTable(
+                  theme,
+                  colors,
+                  density,
+                  visibleRows,
+                  visibleColumns,
+                )),
     );
   }
 
@@ -901,9 +897,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
               final maxColumns = (remainingWidth / columnWidth).floor().clamp(
-                1,
-                visibleColumns.length,
-              );
+                    1,
+                    visibleColumns.length,
+                  );
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -948,9 +944,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
               final maxColumns = (remainingWidth / columnWidth).floor().clamp(
-                1,
-                visibleColumns.length,
-              );
+                    1,
+                    visibleColumns.length,
+                  );
 
               return ListView.builder(
                 itemCount: widget.pageSize.clamp(
@@ -1112,10 +1108,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   ),
                 ),
               ),
-
             if (widget.advancedFilters.isNotEmpty && _selectedItems.isNotEmpty)
               const SizedBox(width: 12),
-
             if (_selectedItems.isNotEmpty)
               Expanded(
                 child: ElevatedButton.icon(
@@ -1271,20 +1265,20 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(22)),
         suffixIcon:
             _filters.containsKey('__global') && _filters['__global']!.isNotEmpty
-            ? IconButton(
-                icon: Icon(
-                  Icons.clear_rounded,
-                  size: 18,
-                  color: colors.onSurfaceVariant,
-                ),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    _filters.remove('__global');
-                  });
-                },
-              )
-            : null,
+                ? IconButton(
+                    icon: Icon(
+                      Icons.clear_rounded,
+                      size: 18,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _filters.remove('__global');
+                      });
+                    },
+                  )
+                : null,
       ),
     );
   }
@@ -1416,11 +1410,11 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     );
     _pageSlideAnimation =
         Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _pageTransitionController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+      CurvedAnimation(
+        parent: _pageTransitionController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
     _pageFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pageTransitionController, curve: Curves.easeOut),
     );
@@ -1739,9 +1733,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
               final maxColumns = (remainingWidth / columnWidth).floor().clamp(
-                1,
-                widget.columns.length,
-              );
+                    1,
+                    widget.columns.length,
+                  );
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -1786,9 +1780,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
               final maxColumns = (remainingWidth / columnWidth).floor().clamp(
-                1,
-                widget.columns.length,
-              );
+                    1,
+                    widget.columns.length,
+                  );
 
               return ListView.builder(
                 itemCount: widget.pageSize.clamp(0, 5),
@@ -1968,16 +1962,15 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: const Offset(0.1, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
+              position: Tween<Offset>(
+                begin: const Offset(0.1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
               child: child,
             ),
           );
@@ -1985,14 +1978,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         child: visibleRows.isEmpty
             ? _buildEmptyTable(theme, colors, density, visibleColumns)
             : (isMobile && widget.mobileConfig != null
-                  ? _buildMobileCards(visibleRows, colors)
-                  : _buildDesktopTable(
-                      theme,
-                      colors,
-                      density,
-                      visibleRows,
-                      visibleColumns,
-                    )),
+                ? _buildMobileCards(visibleRows, colors)
+                : _buildDesktopTable(
+                    theme,
+                    colors,
+                    density,
+                    visibleRows,
+                    visibleColumns,
+                  )),
       ),
     );
   }
@@ -2127,8 +2120,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       ),
       child: Center(
         child: Checkbox(
-          value:
-              visibleRows.isNotEmpty &&
+          value: visibleRows.isNotEmpty &&
               visibleRows.every(_selectedItems.contains),
           onChanged: (_) => _toggleSelectAll(visibleRows),
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -2162,8 +2154,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               color: isSelected
                   ? colors.primaryLight
                   : index.isEven
-                  ? colors.surface
-                  : colors.surfaceVariant.withOpacity(0.3),
+                      ? colors.surface
+                      : colors.surfaceVariant.withOpacity(0.3),
               border: Border(
                 bottom: BorderSide(
                   color: colors.outline.withOpacity(0.3),
@@ -2376,8 +2368,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           color: isSelected
               ? colors.primaryLight
               : index.isEven
-              ? colors.surface
-              : colors.surfaceVariant.withOpacity(0.3),
+                  ? colors.surface
+                  : colors.surfaceVariant.withOpacity(0.3),
           border: Border(
             bottom: BorderSide(
               color: colors.outline.withOpacity(0.3),
@@ -2425,9 +2417,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     DensityConfig density,
   ) {
     final isSorted = _sortedField == column.field;
-    final filterOption = widget.columnFilters
-        .where((f) => f.field == column.field)
-        .firstOrNull;
+    final filterOption =
+        widget.columnFilters.where((f) => f.field == column.field).firstOrNull;
 
     return Container(
       width: width,
@@ -2477,8 +2468,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                         Icon(
                           isSorted
                               ? (_isAscending
-                                    ? Icons.arrow_upward
-                                    : Icons.arrow_downward)
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward)
                               : Icons.unfold_more,
                           size: 14,
                           color: isSorted
@@ -2634,8 +2625,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         if (itemValue == null) return false;
 
         return itemValue.toString().toLowerCase().contains(
-          filterValue.toString().toLowerCase(),
-        );
+              filterValue.toString().toLowerCase(),
+            );
       }).toList();
     }
 
@@ -2866,71 +2857,76 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
   Widget _buildEmpty(DataTableColorScheme colors) {
     return Center(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
-        padding: const EdgeInsets.all(48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 800),
-              tween: Tween<double>(begin: 0.0, end: 1.0),
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Opacity(
-                    opacity: value,
-                    child: Icon(
-                      Icons.inbox_rounded,
-                      size: 64,
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 800),
-              tween: Tween<double>(begin: 0.0, end: 1.0),
-              builder: (context, value, child) {
-                return Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
-                  child: Opacity(
-                    opacity: value,
-                    child: Text(
-                      'Nenhum dado encontrado',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 1000),
-              tween: Tween<double>(begin: 0.0, end: 1.0),
-              builder: (context, value, child) {
-                return Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
-                  child: Opacity(
-                    opacity: value,
-                    child: Text(
-                      'Tente ajustar os filtros ou adicionar novos dados',
-                      style: TextStyle(
-                        fontSize: 14,
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Opacity(
+                      opacity: value,
+                      child: Icon(
+                        Icons.inbox_rounded,
+                        size: 64,
                         color: colors.onSurfaceVariant,
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value,
+                      child: Text(
+                        'Nenhum dado encontrado',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: colors.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 1000),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value,
+                      child: Text(
+                        'Tente ajustar os filtros ou adicionar novos dados',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3021,8 +3017,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       onPressed: action.onPressed,
       label: Text(
         action.label,
-        style:
-            action.textStyle ??
+        style: action.textStyle ??
             TextStyle(
               color: colors.primary,
               fontSize: 14,
@@ -3076,8 +3071,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 const SizedBox(width: 8),
                 Text(
                   action.label,
-                  style:
-                      action.textStyle ??
+                  style: action.textStyle ??
                       TextStyle(
                         color: colors.primary,
                         fontSize: 14,
