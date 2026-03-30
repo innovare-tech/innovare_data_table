@@ -18,7 +18,7 @@ class KeyboardHelpDialog extends StatelessWidget {
         child: Column(
           children: [
             _buildHeader(context),
-            Expanded(child: _buildContent()),
+            Expanded(child: _buildContent(context)),
             _buildFooter(context),
           ],
         ),
@@ -55,19 +55,19 @@ class KeyboardHelpDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: shortcuts.entries.map((entry) {
-          return _buildShortcutGroup(entry.key, entry.value);
+          return _buildShortcutGroup(context, entry.key, entry.value);
         }).toList(),
       ),
     );
   }
 
-  Widget _buildShortcutGroup(String groupName, List<KeyboardShortcut> groupShortcuts) {
+  Widget _buildShortcutGroup(BuildContext context, String groupName, List<KeyboardShortcut> groupShortcuts) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -79,20 +79,20 @@ class KeyboardHelpDialog extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        ...groupShortcuts.map((shortcut) => _buildShortcutItem(shortcut)),
+        ...groupShortcuts.map((shortcut) => _buildShortcutItem(context, shortcut)),
         const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildShortcutItem(KeyboardShortcut shortcut) {
+  Widget _buildShortcutItem(BuildContext context, KeyboardShortcut shortcut) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           SizedBox(
             width: 200,
-            child: _buildKeyCombo(shortcut.keys),
+            child: _buildKeyCombo(context, shortcut.keys),
           ),
           Expanded(
             child: Text(
@@ -105,20 +105,20 @@ class KeyboardHelpDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildKeyCombo(List<String> keys) {
+  Widget _buildKeyCombo(BuildContext context, List<String> keys) {
     return Wrap(
       spacing: 4,
-      children: keys.map((key) => _buildKeyChip(key)).toList(),
+      children: keys.map((key) => _buildKeyChip(context, key)).toList(),
     );
   }
 
-  Widget _buildKeyChip(String key) {
+  Widget _buildKeyChip(BuildContext context, String key) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.grey[400]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Text(
         key,
@@ -135,18 +135,18 @@ class KeyboardHelpDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey[300]!)),
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.grey[600], size: 16),
+          Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Pressione F1 a qualquer momento para ver esta ajuda',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),

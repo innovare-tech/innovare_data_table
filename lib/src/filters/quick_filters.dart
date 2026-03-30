@@ -477,7 +477,7 @@ class _QuickFiltersBarState<T> extends State<QuickFiltersBar<T>>
                 Icon(
                   filter.icon,
                   size: widget.compact ? 12 : 14,
-                  color: isActive ? Colors.white : baseColor,
+                  color: isActive ? widget.colors.onPrimary : baseColor,
                 ),
                 SizedBox(width: widget.compact ? 4 : 6),
               ],
@@ -486,7 +486,7 @@ class _QuickFiltersBarState<T> extends State<QuickFiltersBar<T>>
                 style: TextStyle(
                   fontSize: widget.compact ? 12 : 13,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  color: isActive ? Colors.white : widget.colors.onSurface,
+                  color: isActive ? widget.colors.onPrimary : widget.colors.onSurface,
                 ),
               ),
               if (count != null && count > 0) ...[
@@ -498,7 +498,7 @@ class _QuickFiltersBarState<T> extends State<QuickFiltersBar<T>>
                   ),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.white.withOpacity(0.25)
+                        ? widget.colors.onPrimary.withOpacity(0.25)
                         : baseColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -507,7 +507,7 @@ class _QuickFiltersBarState<T> extends State<QuickFiltersBar<T>>
                     style: TextStyle(
                       fontSize: widget.compact ? 9 : 10,
                       fontWeight: FontWeight.w600,
-                      color: isActive ? Colors.white : baseColor,
+                      color: isActive ? widget.colors.onPrimary : baseColor,
                     ),
                   ),
                 ),

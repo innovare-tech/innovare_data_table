@@ -557,7 +557,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
         color: widget.colors.surfaceVariant,
         boxShadow: _showLeftShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: widget.colors.shadow.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -580,7 +580,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
         color: widget.colors.surface,
         boxShadow: _showLeftShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: widget.colors.shadow.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -771,7 +771,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
-                            Colors.black.withOpacity(0.1),
+                            widget.colors.shadow.withOpacity(0.1),
                             Colors.transparent,
                           ],
                         ),
@@ -791,7 +791,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
                           begin: Alignment.centerRight,
                           end: Alignment.centerLeft,
                           colors: [
-                            Colors.black.withOpacity(0.1),
+                            widget.colors.shadow.withOpacity(0.1),
                             Colors.transparent,
                           ],
                         ),
@@ -1031,7 +1031,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.left:
         return _showLeftShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: widget.colors.shadow.withOpacity(0.08),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -1039,7 +1039,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.right:
         return _showRightShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: widget.colors.shadow.withOpacity(0.08),
             blurRadius: 4,
             offset: const Offset(-2, 0),
           ),
@@ -1055,7 +1055,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.left:
         return _showLeftShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: widget.colors.shadow.withOpacity(0.06),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -1063,7 +1063,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.right:
         return _showRightShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: widget.colors.shadow.withOpacity(0.06),
             blurRadius: 4,
             offset: const Offset(-2, 0),
           ),

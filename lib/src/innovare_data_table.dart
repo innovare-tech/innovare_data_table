@@ -78,9 +78,9 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
             borderRadius: widget.borderRadius ?? BorderRadius.circular(4),
             gradient: LinearGradient(
               colors: [
-                Colors.grey.shade300,
-                Colors.grey.shade100,
-                Colors.grey.shade300,
+                Theme.of(context).colorScheme.outlineVariant,
+                Theme.of(context).colorScheme.surfaceContainerHighest,
+                Theme.of(context).colorScheme.outlineVariant,
               ],
               stops: [
                 _animation.value - 0.3,
@@ -717,7 +717,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: colors.shadow.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

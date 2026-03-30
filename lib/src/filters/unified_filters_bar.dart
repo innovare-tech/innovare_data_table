@@ -272,7 +272,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: widget.colors.onPrimary,
                             ),
                           ),
                         ),
@@ -465,7 +465,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                 Icon(
                   filter.icon,
                   size: 14,
-                  color: isActive ? Colors.white : baseColor,
+                  color: isActive ? widget.colors.onPrimary : baseColor,
                 ),
                 const SizedBox(width: 6),
               ],
@@ -474,7 +474,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  color: isActive ? Colors.white : baseColor,
+                  color: isActive ? widget.colors.onPrimary : baseColor,
                 ),
               ),
               if (count != null && count > 0) ...[
@@ -483,7 +483,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.white.withOpacity(0.25)
+                        ? widget.colors.onPrimary.withOpacity(0.25)
                         : baseColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -492,7 +492,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: isActive ? Colors.white : baseColor,
+                      color: isActive ? widget.colors.onPrimary : baseColor,
                     ),
                   ),
                 ),
@@ -510,7 +510,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: widget.colors.shadow.withOpacity(0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -632,7 +632,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: widget.colors.onPrimary,
                         ),
                       ),
                     ),
@@ -674,7 +674,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                     style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: widget.colors.onPrimary,
                     ),
                   ),
                 ),

@@ -527,7 +527,7 @@ class _SmartLoadingIndicatorState extends State<SmartLoadingIndicator>
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Theme.of(context).shadowColor.withOpacity(0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -541,14 +541,14 @@ class _SmartLoadingIndicatorState extends State<SmartLoadingIndicator>
                           height: 12,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: const AlwaysStoppedAnimation(Colors.white),
+                            valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.onPrimary),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Atualizando...',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),

@@ -279,7 +279,7 @@ class _AccessibleHeaderCellState<T> extends State<AccessibleHeaderCell<T>>
                     size: 16,
                     color: widget.isSorted
                         ? Theme.of(context).primaryColor
-                        : Colors.grey,
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
                 if (widget.column.filterable) ...[
@@ -287,7 +287,7 @@ class _AccessibleHeaderCellState<T> extends State<AccessibleHeaderCell<T>>
                   Icon(
                     Icons.filter_list,
                     size: 16,
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
               ],

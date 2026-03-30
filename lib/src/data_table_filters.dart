@@ -387,7 +387,7 @@ class _AdvancedFiltersDialogState<T> extends State<AdvancedFiltersDialog<T>> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: widget.colors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: widget.colors.onPrimary,
               ),
               child: const Text('Aplicar'),
             ),
@@ -630,10 +630,10 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _canCreateFilter() ? Colors.green.shade50 : Colors.red.shade50,
+                  color: _canCreateFilter() ? widget.colors.success.withOpacity(0.1) : widget.colors.error.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _canCreateFilter() ? Colors.green.shade300 : Colors.red.shade300,
+                    color: _canCreateFilter() ? widget.colors.success.withOpacity(0.5) : widget.colors.error.withOpacity(0.5),
                   ),
                 ),
                 child: Row(
@@ -641,7 +641,7 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
                     Icon(
                       _canCreateFilter() ? Icons.check_circle : Icons.error,
                       size: 16,
-                      color: _canCreateFilter() ? Colors.green.shade700 : Colors.red.shade700,
+                      color: _canCreateFilter() ? widget.colors.success : widget.colors.error,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -651,7 +651,7 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
                             : _getValidationMessage(),
                         style: TextStyle(
                           fontSize: 12,
-                          color: _canCreateFilter() ? Colors.green.shade700 : Colors.red.shade700,
+                          color: _canCreateFilter() ? widget.colors.success : widget.colors.error,
                         ),
                       ),
                     ),
@@ -677,7 +677,7 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
                         ? widget.colors.primary
                         : widget.colors.onSurfaceVariant.withOpacity(0.3),
                     foregroundColor: _canCreateFilter()
-                        ? Colors.white
+                        ? widget.colors.onPrimary
                         : widget.colors.onSurfaceVariant.withOpacity(0.6),
                   ),
                   child: Text(widget.existingFilter != null ? 'Atualizar' : 'Criar'),
