@@ -23,7 +23,7 @@ class DataTableController<T> extends ChangeNotifier {
   StreamSubscription<DataTableUpdate<T>>? _updatesSubscription;
 
   DataTableController({required DataTableSource<T> dataSource})
-      : _dataSource = dataSource {
+    : _dataSource = dataSource {
     _setupRealtimeUpdates();
   }
 
@@ -128,7 +128,11 @@ class DataTableController<T> extends ChangeNotifier {
   }
 
   // FILTROS
-  Future<void> addFilter(String field, dynamic value, [FilterOperator? operator]) async {
+  Future<void> addFilter(
+    String field,
+    dynamic value, [
+    FilterOperator? operator,
+  ]) async {
     final existingFilters = List<DataTableFilter>.from(_currentRequest.filters);
 
     // Remover filtro existente para este campo
@@ -136,11 +140,13 @@ class DataTableController<T> extends ChangeNotifier {
 
     // Adicionar novo filtro se valor não for vazio
     if (value != null && value.toString().isNotEmpty) {
-      existingFilters.add(DataTableFilter(
-        field: field,
-        value: value,
-        operator: operator ?? FilterOperator.contains,
-      ));
+      existingFilters.add(
+        DataTableFilter(
+          field: field,
+          value: value,
+          operator: operator ?? FilterOperator.contains,
+        ),
+      );
     }
 
     final newRequest = _currentRequest.copyWith(
@@ -156,10 +162,7 @@ class DataTableController<T> extends ChangeNotifier {
         .where((f) => f.field != field)
         .toList();
 
-    final newRequest = _currentRequest.copyWith(
-      filters: newFilters,
-      page: 0,
-    );
+    final newRequest = _currentRequest.copyWith(filters: newFilters, page: 0);
 
     await fetchData(newRequest);
   }
@@ -177,6 +180,7 @@ class DataTableController<T> extends ChangeNotifier {
   // REFRESH
   Future<void> refresh() async {
     _clearCache();
+    _dataSource.clearCache();
     await fetchData();
   }
 
@@ -222,15 +226,15 @@ class DataTableController<T> extends ChangeNotifier {
         refresh();
         break;
       case DataTableUpdateType.insert:
-      // TODO: Implementar inserção otimizada
+        // TODO: Implementar inserção otimizada
         refresh();
         break;
       case DataTableUpdateType.update:
-      // TODO: Implementar update otimizado
+        // TODO: Implementar update otimizado
         refresh();
         break;
       case DataTableUpdateType.delete:
-      // TODO: Implementar remoção otimizada
+        // TODO: Implementar remoção otimizada
         refresh();
         break;
     }

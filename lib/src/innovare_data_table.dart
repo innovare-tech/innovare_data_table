@@ -364,8 +364,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   // Inicializar funcionalidades enhanced (opcionais)
   void _initializeEnhancedFeatures() {
     // Column manager
-    _columnManagerController = _effectiveConfig.columnController ??
-        ColumnManagerController<T>();
+    _columnManagerController =
+        _effectiveConfig.columnController ?? ColumnManagerController<T>();
 
     if (_effectiveConfig.enableColumnManagement) {
       _columnManagerController.initialize(widget.columns);
@@ -492,10 +492,13 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     List<T> data = _getEffectiveData();
 
     // Aplicar busca (enhanced ou básica)
-    if (_effectiveConfig.enableSearch && _effectiveConfig.searchConfig != null) {
+    if (_effectiveConfig.enableSearch &&
+        _effectiveConfig.searchConfig != null) {
       // Busca enhanced
       if (_searchTerm.isNotEmpty) {
-        data = data.where((item) => _matchesEnhancedSearch(item, _searchTerm)).toList();
+        data = data
+            .where((item) => _matchesEnhancedSearch(item, _searchTerm))
+            .toList();
       }
     } else {
       // Busca básica (compatibilidade)
@@ -549,7 +552,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       } else {
         // Fallback: procurar coluna correspondente
         final column = widget.columns.firstWhereOrNull(
-              (col) => col.field == field,
+          (col) => col.field == field,
         );
         if (column != null) {
           value = column.valueGetter(item).toString();
@@ -571,7 +574,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       QuickFilter<T>? matchingFilter;
       for (final config in _effectiveConfig.quickFiltersConfigs) {
         matchingFilter = config.filters.firstWhereOrNull(
-              (f) => f.id == filterId,
+          (f) => f.id == filterId,
         );
         if (matchingFilter != null) break;
       }
@@ -603,7 +606,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     // Tentar usar enhanced search fieldGetter primeiro
     if (_effectiveConfig.searchConfig?.fieldGetter != null) {
       try {
-        itemValue = _effectiveConfig.searchConfig!.fieldGetter!(item, filter.field);
+        itemValue = _effectiveConfig.searchConfig!.fieldGetter!(
+          item,
+          filter.field,
+        );
       } catch (e) {
         // Fallback para coluna correspondente
         itemValue = _getItemValueFromColumn(item, filter.field);
@@ -619,8 +625,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             filter.value?.toString().toLowerCase();
 
       case FilterOperator.contains:
-        return itemValue?.toString().toLowerCase()
-            .contains(filter.value?.toString().toLowerCase() ?? '') ?? false;
+        return itemValue?.toString().toLowerCase().contains(
+                  filter.value?.toString().toLowerCase() ?? '',
+                ) ??
+            false;
 
       case FilterOperator.between:
         if (filter.value is Map<String, DateTime>) {
@@ -643,9 +651,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
   dynamic _getItemValueFromColumn(T item, String field) {
     // Procurar coluna correspondente
-    final column = widget.columns.firstWhereOrNull(
-          (col) => col.field == field,
-    );
+    final column = widget.columns.firstWhereOrNull((col) => col.field == field);
 
     if (column != null) {
       return column.valueGetter(item);
@@ -659,9 +665,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     var filtered = data;
 
     for (final filter in _advancedFilters.where((f) => f.isActive)) {
-      final column = widget.columns
-          .where((c) => c.field == filter.field)
-          .firstOrNull;
+      final column =
+          widget.columns.where((c) => c.field == filter.field).firstOrNull;
       if (column == null) continue;
 
       filtered = filtered.where((item) {
@@ -676,7 +681,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   List<T> _applySorting(List<T> data) {
     if (_sortedField == null) return data;
 
-    final column = widget.columns.firstWhere((col) => col.field == _sortedField);
+    final column = widget.columns.firstWhere(
+      (col) => col.field == _sortedField,
+    );
 
     data.sort((a, b) {
       final valueA = column.valueGetter(a);
@@ -701,7 +708,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final density = theme.densityConfig;
     final colors = theme.colorScheme;
 
-    final columnsToUse = widget.enableColumnDragDrop ? _orderedColumns : widget.columns;
+    final columnsToUse =
+        widget.enableColumnDragDrop ? _orderedColumns : widget.columns;
     final visibleColumns = _getVisibleColumns(
       context,
       columnsToUse,
@@ -749,11 +757,11 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildContent(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return FadeTransition(
       opacity: _pageFadeAnimation,
       child: SlideTransition(
@@ -769,7 +777,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 _effectiveConfig.quickFiltersConfigs.isNotEmpty)
               QuickFiltersBar<T>(
                 configs: _effectiveConfig.quickFiltersConfigs,
-                data: _useDataSource ? _dataController!.currentData : _getFilteredData(),
+                data: _useDataSource
+                    ? _dataController!.currentData
+                    : _getFilteredData(),
                 activeFilterIds: _activeQuickFilters,
                 onFiltersChanged: (activeIds) {
                   print('🔥 CALLBACK RECEBIDO: $activeIds');
@@ -780,14 +790,18 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               ),
 
             // Filter pills sempre visível
-            if ((_activeQuickFilters.isNotEmpty || _advancedFilters.isNotEmpty) &&
-                (_effectiveConfig.enableQuickFilters || widget.advancedFilters.isNotEmpty))
+            if ((_activeQuickFilters.isNotEmpty ||
+                    _advancedFilters.isNotEmpty) &&
+                (_effectiveConfig.enableQuickFilters ||
+                    widget.advancedFilters.isNotEmpty))
               _buildFilterPills(colors),
 
             // Selection bar sempre visível
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              height: widget.enableSelection && _selectedItems.isNotEmpty ? null : 0,
+              height: widget.enableSelection && _selectedItems.isNotEmpty
+                  ? null
+                  : 0,
               child: widget.enableSelection && _selectedItems.isNotEmpty
                   ? _buildSelectionBar(colors, density)
                   : const SizedBox.shrink(),
@@ -795,7 +809,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
             // APENAS A ÁREA DA TABELA COM LOADING
             Expanded(
-              child: _buildTableWithLoading(theme, colors, density, visibleColumns),
+              child: _buildTableWithLoading(
+                theme,
+                colors,
+                density,
+                visibleColumns,
+              ),
             ),
 
             // Paginação sempre visível
@@ -808,11 +827,11 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildTableWithLoading(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     if (_getEffectiveIsLoading()) {
       return _buildSkeletonTableContent(colors, density, visibleColumns);
     }
@@ -829,27 +848,36 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             position: Tween<Offset>(
               begin: const Offset(0.1, 0),
               end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-            )),
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ),
+            ),
             child: child,
           ),
         );
       },
       child: visibleRows.isEmpty
           ? _buildEmptyTable(theme, colors, density, visibleColumns)
-          : (ResponsiveTableManager.isMobile(context) && widget.mobileConfig != null
-          ? _buildMobileCards(visibleRows, colors)
-          : _buildDesktopTable(theme, colors, density, visibleRows, visibleColumns)),
+          : (ResponsiveTableManager.isMobile(context) &&
+                  widget.mobileConfig != null
+              ? _buildMobileCards(visibleRows, colors)
+              : _buildDesktopTable(
+                  theme,
+                  colors,
+                  density,
+                  visibleRows,
+                  visibleColumns,
+                )),
     );
   }
 
   Widget _buildSkeletonTableContent(
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return Column(
       children: [
         // Header da tabela
@@ -857,7 +885,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           height: density.headerHeight,
           decoration: BoxDecoration(
             color: colors.surfaceVariant,
-            border: Border(bottom: BorderSide(color: colors.outline, width: 0.5)),
+            border: Border(
+              bottom: BorderSide(color: colors.outline, width: 0.5),
+            ),
           ),
           padding: density.headerPadding,
           child: LayoutBuilder(
@@ -866,7 +896,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final selectionWidth = widget.enableSelection ? 60.0 : 0.0;
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
-              final maxColumns = (remainingWidth / columnWidth).floor().clamp(1, visibleColumns.length);
+              final maxColumns = (remainingWidth / columnWidth).floor().clamp(
+                    1,
+                    visibleColumns.length,
+                  );
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -876,18 +909,25 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                       Container(
                         width: 60,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: SkeletonLoader(width: 20, height: 20, borderRadius: BorderRadius.circular(3)),
+                        child: SkeletonLoader(
+                          width: 20,
+                          height: 20,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
                     ],
-                    ...List.generate(maxColumns, (index) => Container(
-                      width: columnWidth,
-                      padding: const EdgeInsets.only(right: 16),
-                      child: SkeletonLoader(
-                        width: 120,
-                        height: 16,
-                        borderRadius: BorderRadius.circular(4),
+                    ...List.generate(
+                      maxColumns,
+                      (index) => Container(
+                        width: columnWidth,
+                        padding: const EdgeInsets.only(right: 16),
+                        child: SkeletonLoader(
+                          width: 120,
+                          height: 16,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    )),
+                    ),
                   ],
                 ),
               );
@@ -903,15 +943,28 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final selectionWidth = widget.enableSelection ? 60.0 : 0.0;
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
-              final maxColumns = (remainingWidth / columnWidth).floor().clamp(1, visibleColumns.length);
+              final maxColumns = (remainingWidth / columnWidth).floor().clamp(
+                    1,
+                    visibleColumns.length,
+                  );
 
               return ListView.builder(
-                itemCount: widget.pageSize.clamp(0, 8), // Menos linhas para economizar espaço
+                itemCount: widget.pageSize.clamp(
+                  0,
+                  8,
+                ), // Menos linhas para economizar espaço
                 itemBuilder: (context, index) => Container(
                   height: density.rowHeight,
                   decoration: BoxDecoration(
-                    color: index.isEven ? colors.surface : colors.surfaceVariant.withOpacity(0.3),
-                    border: Border(bottom: BorderSide(color: colors.outline.withOpacity(0.3), width: 0.5)),
+                    color: index.isEven
+                        ? colors.surface
+                        : colors.surfaceVariant.withOpacity(0.3),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: colors.outline.withOpacity(0.3),
+                        width: 0.5,
+                      ),
+                    ),
                   ),
                   padding: density.cellPadding,
                   child: SingleChildScrollView(
@@ -922,18 +975,25 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                           Container(
                             width: 60,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: SkeletonLoader(width: 20, height: 20, borderRadius: BorderRadius.circular(3)),
+                            child: SkeletonLoader(
+                              width: 20,
+                              height: 20,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
                           ),
                         ],
-                        ...List.generate(maxColumns, (index) => Container(
-                          width: columnWidth,
-                          padding: const EdgeInsets.only(right: 16),
-                          child: SkeletonLoader(
-                            width: double.infinity,
-                            height: 14,
-                            borderRadius: BorderRadius.circular(4),
+                        ...List.generate(
+                          maxColumns,
+                          (index) => Container(
+                            width: columnWidth,
+                            padding: const EdgeInsets.only(right: 16),
+                            child: SkeletonLoader(
+                              width: double.infinity,
+                              height: 14,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -985,7 +1045,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 if (_effectiveConfig.enableColumnManagement && !isMobile)
                   IconButton(
                     onPressed: _showColumnManager,
-                    icon: Icon(Icons.view_column_rounded, color: colors.onSurfaceVariant),
+                    icon: Icon(
+                      Icons.view_column_rounded,
+                      color: colors.onSurfaceVariant,
+                    ),
                     tooltip: 'Gerenciar colunas',
                   ),
                 if (widget.showScreenSizeIndicator) ...[
@@ -1003,13 +1066,15 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               controller: _unifiedFiltersController!,
               data: widget.rows,
               colors: colors,
-              quickActions: widget.quickActions.map((action) =>
-                  _buildQuickActionButton(action, colors)
-              ).toList(),
+              quickActions: widget.quickActions
+                  .map((action) => _buildQuickActionButton(action, colors))
+                  .toList(),
             )
           else
-          // Sistema antigo (manter compatibilidade)
-            isMobile ? _buildMobileControls(colors) : _buildDesktopControls(colors),
+            // Sistema antigo (manter compatibilidade)
+            isMobile
+                ? _buildMobileControls(colors)
+                : _buildDesktopControls(colors),
         ],
       ),
     );
@@ -1019,8 +1084,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     return Column(
       children: [
         // Search field
-        if (_effectiveConfig.enableSearch)
-          _buildSearchField(colors),
+        if (_effectiveConfig.enableSearch) _buildSearchField(colors),
 
         if (_effectiveConfig.enableSearch &&
             (widget.advancedFilters.isNotEmpty || _selectedItems.isNotEmpty))
@@ -1033,21 +1097,30 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _showAdvancedFiltersDialog,
-                  icon: Icon(Icons.tune_rounded, size: 18, color: colors.primary),
-                  label: Text('Filtros', style: TextStyle(color: colors.primary)),
+                  icon: Icon(
+                    Icons.tune_rounded,
+                    size: 18,
+                    color: colors.primary,
+                  ),
+                  label: Text(
+                    'Filtros',
+                    style: TextStyle(color: colors.primary),
+                  ),
                 ),
               ),
-
             if (widget.advancedFilters.isNotEmpty && _selectedItems.isNotEmpty)
               const SizedBox(width: 12),
-
             if (_selectedItems.isNotEmpty)
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _effectiveConfig.onBulkAction?.call(_selectedItems.toList()),
+                  onPressed: () => _effectiveConfig.onBulkAction?.call(
+                    _selectedItems.toList(),
+                  ),
                   icon: const Icon(Icons.more_horiz, size: 18),
                   label: Text('${_selectedItems.length} selecionados'),
-                  style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                  ),
                 ),
               ),
           ],
@@ -1055,7 +1128,6 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       ],
     );
   }
-
 
   Widget _buildDesktopControls(DataTableColorScheme colors) {
     return Row(
@@ -1083,8 +1155,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 if (_effectiveConfig.onBulkAction != null) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => _effectiveConfig.onBulkAction?.call(_selectedItems.toList()),
-                    child: Icon(Icons.more_horiz, size: 16, color: colors.primary),
+                    onTap: () => _effectiveConfig.onBulkAction?.call(
+                      _selectedItems.toList(),
+                    ),
+                    child: Icon(
+                      Icons.more_horiz,
+                      size: 16,
+                      color: colors.primary,
+                    ),
                   ),
                 ],
               ],
@@ -1109,7 +1187,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           _buildQuickActionsContent(widget.quickActions, colors),
 
         // Filter button
-        if (_effectiveConfig.enableAdvancedFilters && _effectiveConfig.advancedFiltersConfigs.isNotEmpty)
+        if (_effectiveConfig.enableAdvancedFilters &&
+            _effectiveConfig.advancedFiltersConfigs.isNotEmpty)
           IconButton(
             onPressed: _showAdvancedFiltersDialog,
             icon: Stack(
@@ -1184,17 +1263,22 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         prefixIcon: Icon(Icons.search_rounded, color: colors.onSurfaceVariant),
         hintText: 'Buscar...',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(22)),
-        suffixIcon: _filters.containsKey('__global') && _filters['__global']!.isNotEmpty
-            ? IconButton(
-          icon: Icon(Icons.clear_rounded, size: 18, color: colors.onSurfaceVariant),
-          onPressed: () {
-            _searchController.clear();
-            setState(() {
-              _filters.remove('__global');
-            });
-          },
-        )
-            : null,
+        suffixIcon:
+            _filters.containsKey('__global') && _filters['__global']!.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.clear_rounded,
+                      size: 18,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _filters.remove('__global');
+                      });
+                    },
+                  )
+                : null,
       ),
     );
   }
@@ -1209,7 +1293,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
       for (final config in _effectiveConfig.quickFiltersConfigs) {
         matchingFilter = config.filters.firstWhereOrNull(
-              (f) => f.id == filterId,
+          (f) => f.id == filterId,
         );
         if (matchingFilter != null) {
           groupLabel = config.groupLabel;
@@ -1218,22 +1302,24 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       }
 
       if (matchingFilter != null) {
-        pills.add(FilterPill(
-          id: matchingFilter.id,
-          field: matchingFilter.field,
-          label: groupLabel ?? matchingFilter.field,
-          displayText: matchingFilter.label,
-          value: matchingFilter.value,
-          operator: matchingFilter.operator,
-          color: matchingFilter.color,
-        ));
+        pills.add(
+          FilterPill(
+            id: matchingFilter.id,
+            field: matchingFilter.field,
+            label: groupLabel ?? matchingFilter.field,
+            displayText: matchingFilter.label,
+            value: matchingFilter.value,
+            operator: matchingFilter.operator,
+            color: matchingFilter.color,
+          ),
+        );
       }
     }
 
     // Advanced filter pills (resto permanece igual)
     for (final filter in _advancedFilters.where((f) => f.isActive)) {
       final config = _effectiveConfig.advancedFiltersConfigs.firstWhereOrNull(
-            (c) => c.field == filter.field,
+        (c) => c.field == filter.field,
       );
       if (config != null) {
         pills.add(FilterPill.fromActiveFilter(filter, config.label));
@@ -1254,8 +1340,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           }
 
           // Remover de advanced filters
-          _advancedFilters.removeWhere((f) =>
-          '${f.field}_${f.value}' == pillId);
+          _advancedFilters.removeWhere(
+            (f) => '${f.field}_${f.value}' == pillId,
+          );
         });
       },
       onClearAll: () {
@@ -1300,7 +1387,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       vsync: this,
     );
     _sortRotation = Tween<double>(begin: 0.0, end: 0.5).animate(
-      CurvedAnimation(parent: _sortAnimationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _sortAnimationController,
+        curve: Curves.easeInOut,
+      ),
     );
 
     _selectionAnimationController = AnimationController(
@@ -1308,20 +1398,23 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       vsync: this,
     );
     _selectionScale = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _selectionAnimationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _selectionAnimationController,
+        curve: Curves.easeInOut,
+      ),
     );
 
     _pageTransitionController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    _pageSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.3, 0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _pageTransitionController,
-      curve: Curves.easeOutCubic,
-    ));
+    _pageSlideAnimation =
+        Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _pageTransitionController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
     _pageFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pageTransitionController, curve: Curves.easeOut),
     );
@@ -1374,12 +1467,16 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
       if (_headerScrollController.hasClients) {
         final headerPosition = _headerScrollController.position;
-        print('🔍 HEADER SCROLL: maxScrollExtent: ${headerPosition.maxScrollExtent}');
+        print(
+          '🔍 HEADER SCROLL: maxScrollExtent: ${headerPosition.maxScrollExtent}',
+        );
       }
 
       if (_bodyScrollController.hasClients) {
         final bodyPosition = _bodyScrollController.position;
-        print('🔍 BODY SCROLL: maxScrollExtent: ${bodyPosition.maxScrollExtent}');
+        print(
+          '🔍 BODY SCROLL: maxScrollExtent: ${bodyPosition.maxScrollExtent}',
+        );
       }
     });
   }
@@ -1493,9 +1590,11 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
     switch (filter.operator) {
       case FilterOperator.equals:
-        return valueStr.trim().toLowerCase() == filterValueStr.trim().toLowerCase();
+        return valueStr.trim().toLowerCase() ==
+            filterValueStr.trim().toLowerCase();
       case FilterOperator.notEquals:
-        return valueStr.trim().toLowerCase() != filterValueStr.trim().toLowerCase();
+        return valueStr.trim().toLowerCase() !=
+            filterValueStr.trim().toLowerCase();
       case FilterOperator.contains:
         if (filterValueStr.isEmpty) return true;
         return valueStr.toLowerCase().contains(filterValueStr.toLowerCase());
@@ -1521,12 +1620,19 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     }
   }
 
-  bool _compareNumbers(dynamic value1, dynamic value2, bool Function(double, double) comparison) {
+  bool _compareNumbers(
+    dynamic value1,
+    dynamic value2,
+    bool Function(double, double) comparison,
+  ) {
     final num1 = _parseNumber(value1);
     final num2 = _parseNumber(value2);
 
     if (num1 == null || num2 == null) {
-      return comparison(value1.toString().length.toDouble(), value2.toString().length.toDouble());
+      return comparison(
+        value1.toString().length.toDouble(),
+        value2.toString().length.toDouble(),
+      );
     }
 
     return comparison(num1, num2);
@@ -1568,7 +1674,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     });
   }
 
-  Widget _buildSkeletonLoading(DataTableColorScheme colors, DensityConfig density) {
+  Widget _buildSkeletonLoading(
+    DataTableColorScheme colors,
+    DensityConfig density,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1578,17 +1687,31 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            border: Border(bottom: BorderSide(color: colors.outline, width: 0.5)),
+            border: Border(
+              bottom: BorderSide(color: colors.outline, width: 0.5),
+            ),
           ),
           child: Row(
             children: [
               Expanded(
-                child: SkeletonLoader(width: 200, height: 28, borderRadius: BorderRadius.circular(4)),
+                child: SkeletonLoader(
+                  width: 200,
+                  height: 28,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
               const SizedBox(width: 20),
-              SkeletonLoader(width: 350, height: 44, borderRadius: BorderRadius.circular(22)),
+              SkeletonLoader(
+                width: 350,
+                height: 44,
+                borderRadius: BorderRadius.circular(22),
+              ),
               const SizedBox(width: 12),
-              SkeletonLoader(width: 44, height: 44, borderRadius: BorderRadius.circular(8)),
+              SkeletonLoader(
+                width: 44,
+                height: 44,
+                borderRadius: BorderRadius.circular(8),
+              ),
             ],
           ),
         ),
@@ -1598,7 +1721,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           height: density.headerHeight,
           decoration: BoxDecoration(
             color: colors.surfaceVariant,
-            border: Border(bottom: BorderSide(color: colors.outline, width: 0.5)),
+            border: Border(
+              bottom: BorderSide(color: colors.outline, width: 0.5),
+            ),
           ),
           padding: density.headerPadding,
           child: LayoutBuilder(
@@ -1607,7 +1732,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final selectionWidth = widget.enableSelection ? 60.0 : 0.0;
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
-              final maxColumns = (remainingWidth / columnWidth).floor().clamp(1, widget.columns.length);
+              final maxColumns = (remainingWidth / columnWidth).floor().clamp(
+                    1,
+                    widget.columns.length,
+                  );
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -1617,18 +1745,25 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                       Container(
                         width: 60,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: SkeletonLoader(width: 20, height: 20, borderRadius: BorderRadius.circular(3)),
+                        child: SkeletonLoader(
+                          width: 20,
+                          height: 20,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
                     ],
-                    ...List.generate(maxColumns, (index) => Container(
-                      width: columnWidth,
-                      padding: const EdgeInsets.only(right: 16),
-                      child: SkeletonLoader(
-                        width: 120,
-                        height: 16,
-                        borderRadius: BorderRadius.circular(4),
+                    ...List.generate(
+                      maxColumns,
+                      (index) => Container(
+                        width: columnWidth,
+                        padding: const EdgeInsets.only(right: 16),
+                        child: SkeletonLoader(
+                          width: 120,
+                          height: 16,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    )),
+                    ),
                   ],
                 ),
               );
@@ -1644,15 +1779,25 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               final selectionWidth = widget.enableSelection ? 60.0 : 0.0;
               final remainingWidth = availableWidth - selectionWidth;
               final columnWidth = 200.0;
-              final maxColumns = (remainingWidth / columnWidth).floor().clamp(1, widget.columns.length);
+              final maxColumns = (remainingWidth / columnWidth).floor().clamp(
+                    1,
+                    widget.columns.length,
+                  );
 
               return ListView.builder(
                 itemCount: widget.pageSize.clamp(0, 5),
                 itemBuilder: (context, index) => Container(
                   height: density.rowHeight,
                   decoration: BoxDecoration(
-                    color: index.isEven ? colors.surface : colors.surfaceVariant.withOpacity(0.3),
-                    border: Border(bottom: BorderSide(color: colors.outline.withOpacity(0.3), width: 0.5)),
+                    color: index.isEven
+                        ? colors.surface
+                        : colors.surfaceVariant.withOpacity(0.3),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: colors.outline.withOpacity(0.3),
+                        width: 0.5,
+                      ),
+                    ),
                   ),
                   padding: density.cellPadding,
                   child: SingleChildScrollView(
@@ -1663,18 +1808,25 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                           Container(
                             width: 60,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: SkeletonLoader(width: 20, height: 20, borderRadius: BorderRadius.circular(3)),
+                            child: SkeletonLoader(
+                              width: 20,
+                              height: 20,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
                           ),
                         ],
-                        ...List.generate(maxColumns, (index) => Container(
-                          width: columnWidth,
-                          padding: const EdgeInsets.only(right: 16),
-                          child: SkeletonLoader(
-                            width: double.infinity,
-                            height: 14,
-                            borderRadius: BorderRadius.circular(4),
+                        ...List.generate(
+                          maxColumns,
+                          (index) => Container(
+                            width: columnWidth,
+                            padding: const EdgeInsets.only(right: 16),
+                            child: SkeletonLoader(
+                              width: double.infinity,
+                              height: 14,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -1690,20 +1842,40 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: colors.surface,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-              border: Border(top: BorderSide(color: colors.outline, width: 0.5)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(12),
+              ),
+              border: Border(
+                top: BorderSide(color: colors.outline, width: 0.5),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SkeletonLoader(width: 180, height: 14, borderRadius: BorderRadius.circular(4)),
+                SkeletonLoader(
+                  width: 180,
+                  height: 14,
+                  borderRadius: BorderRadius.circular(4),
+                ),
                 Row(
                   children: [
-                    SkeletonLoader(width: 80, height: 14, borderRadius: BorderRadius.circular(4)),
+                    SkeletonLoader(
+                      width: 80,
+                      height: 14,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                     const SizedBox(width: 16),
-                    SkeletonLoader(width: 40, height: 40, borderRadius: BorderRadius.circular(8)),
+                    SkeletonLoader(
+                      width: 40,
+                      height: 40,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     const SizedBox(width: 8),
-                    SkeletonLoader(width: 40, height: 40, borderRadius: BorderRadius.circular(8)),
+                    SkeletonLoader(
+                      width: 40,
+                      height: 40,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ],
                 ),
               ],
@@ -1713,7 +1885,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     );
   }
 
-  Widget _buildSelectionBar(DataTableColorScheme colors, DensityConfig density) {
+  Widget _buildSelectionBar(
+    DataTableColorScheme colors,
+    DensityConfig density,
+  ) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -1751,10 +1926,17 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                     widget.onSelectionChanged?.call([]);
                   });
                 },
-                icon: Icon(Icons.clear_rounded, size: 16, color: colors.primary),
+                icon: Icon(
+                  Icons.clear_rounded,
+                  size: 16,
+                  color: colors.primary,
+                ),
                 label: Text(
                   'Limpar seleção',
-                  style: TextStyle(color: colors.primary, fontSize: density.fontSize),
+                  style: TextStyle(
+                    color: colors.primary,
+                    fontSize: density.fontSize,
+                  ),
                 ),
               ),
             ),
@@ -1765,12 +1947,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildTable(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     final isMobile = ResponsiveTableManager.isMobile(context);
 
     return Expanded(
@@ -1783,10 +1965,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               position: Tween<Offset>(
                 begin: const Offset(0.1, 0),
                 end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
               child: child,
             ),
           );
@@ -1795,26 +1979,36 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             ? _buildEmptyTable(theme, colors, density, visibleColumns)
             : (isMobile && widget.mobileConfig != null
                 ? _buildMobileCards(visibleRows, colors)
-                : _buildDesktopTable(theme, colors, density, visibleRows, visibleColumns)),
+                : _buildDesktopTable(
+                    theme,
+                    colors,
+                    density,
+                    visibleRows,
+                    visibleColumns,
+                  )),
       ),
     );
   }
 
   Widget _buildEmptyTable(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return AnimatedBuilder(
       animation: _resizeController,
       builder: (context, child) {
         return Column(
           children: [
-            _buildFixedRegularHeader(theme, colors, density, <T>[], visibleColumns),
-            Expanded(
-              child: _buildEmpty(colors),
+            _buildFixedRegularHeader(
+              theme,
+              colors,
+              density,
+              <T>[],
+              visibleColumns,
             ),
+            Expanded(child: _buildEmpty(colors)),
           ],
         );
       },
@@ -1836,14 +2030,20 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildDesktopTable(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     if (widget.enableStickyColumns && _hasStickyColumns(visibleColumns)) {
-      return _buildStickyTable(theme, colors, density, visibleRows, visibleColumns);
+      return _buildStickyTable(
+        theme,
+        colors,
+        density,
+        visibleRows,
+        visibleColumns,
+      );
     }
 
     return AnimatedBuilder(
@@ -1851,9 +2051,21 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       builder: (context, child) {
         return Column(
           children: [
-            _buildFixedRegularHeader(theme, colors, density, visibleRows, visibleColumns),
+            _buildFixedRegularHeader(
+              theme,
+              colors,
+              density,
+              visibleRows,
+              visibleColumns,
+            ),
             Expanded(
-              child: _buildFixedRegularBody(theme, colors, density, visibleRows, visibleColumns),
+              child: _buildFixedRegularBody(
+                theme,
+                colors,
+                density,
+                visibleRows,
+                visibleColumns,
+              ),
             ),
           ],
         );
@@ -1862,12 +2074,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildFixedRegularHeader(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return Container(
       height: density.headerHeight,
       decoration: BoxDecoration(
@@ -1879,7 +2091,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           if (widget.enableSelection)
             _buildSelectionHeaderCell(colors, density, visibleRows),
           Expanded(
-            child: _buildScrollableHeaderRow(theme, colors, density, visibleColumns),
+            child: _buildScrollableHeaderRow(
+              theme,
+              colors,
+              density,
+              visibleColumns,
+            ),
           ),
         ],
       ),
@@ -1887,21 +2104,24 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildSelectionHeaderCell(
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      ) {
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+  ) {
     return Container(
       width: 60,
       height: density.headerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: colors.surfaceVariant,
-        border: Border(right: BorderSide(color: colors.outline.withOpacity(0.3))),
+        border: Border(
+          right: BorderSide(color: colors.outline.withOpacity(0.3)),
+        ),
       ),
       child: Center(
         child: Checkbox(
-          value: visibleRows.isNotEmpty && visibleRows.every(_selectedItems.contains),
+          value: visibleRows.isNotEmpty &&
+              visibleRows.every(_selectedItems.contains),
           onChanged: (_) => _toggleSelectAll(visibleRows),
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
@@ -1910,14 +2130,16 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildSelectionBodyColumn(
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      ) {
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+  ) {
     return Container(
       width: 60,
       decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: colors.outline.withOpacity(0.3))),
+        border: Border(
+          right: BorderSide(color: colors.outline.withOpacity(0.3)),
+        ),
       ),
       child: ListView.builder(
         controller: _verticalScrollController,
@@ -1932,12 +2154,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               color: isSelected
                   ? colors.primaryLight
                   : index.isEven
-                  ? colors.surface
-                  : colors.surfaceVariant.withOpacity(0.3),
-              border: Border(bottom: BorderSide(
-                color: colors.outline.withOpacity(0.3),
-                width: 0.5,
-              )),
+                      ? colors.surface
+                      : colors.surfaceVariant.withOpacity(0.3),
+              border: Border(
+                bottom: BorderSide(
+                  color: colors.outline.withOpacity(0.3),
+                  width: 0.5,
+                ),
+              ),
             ),
             child: Center(
               child: Checkbox(
@@ -1953,11 +2177,11 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildScrollableHeaderRow(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         double totalWidth = 0;
@@ -1989,7 +2213,13 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 children: visibleColumns.asMap().entries.map((entry) {
                   final index = entry.key;
                   final column = entry.value;
-                  return _buildSingleHeaderCell(column, index, theme, colors, density);
+                  return _buildSingleHeaderCell(
+                    column,
+                    index,
+                    theme,
+                    colors,
+                    density,
+                  );
                 }).toList(),
               ),
             ),
@@ -2000,12 +2230,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildScrollableBodyContent(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         double totalWidth = 0;
@@ -2036,7 +2266,13 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 itemCount: visibleRows.length,
                 itemBuilder: (context, index) {
                   final item = visibleRows[index];
-                  return _buildSingleDataRow(item, index, colors, density, visibleColumns);
+                  return _buildSingleDataRow(
+                    item,
+                    index,
+                    colors,
+                    density,
+                    visibleColumns,
+                  );
                 },
               ),
             ),
@@ -2047,12 +2283,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildSingleHeaderCell(
-      DataColumnConfig<T> column,
-      int index,
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      ) {
+    DataColumnConfig<T> column,
+    int index,
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+  ) {
     final currentWidth = _resizeController.getColumnWidth(
       column.field,
       defaultWidth: column.effectiveWidth,
@@ -2112,30 +2348,34 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildSingleDataRow(
-      T item,
-      int index,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    T item,
+    int index,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     final isSelected = _selectedItems.contains(item);
 
     return InkWell(
-      onTap: widget.onRowTapCallback != null ? () {
-        widget.onRowTapCallback!(item);
-      } : null,
+      onTap: widget.onRowTapCallback != null
+          ? () {
+              widget.onRowTapCallback!(item);
+            }
+          : null,
       child: Container(
         height: density.rowHeight,
         decoration: BoxDecoration(
           color: isSelected
               ? colors.primaryLight
               : index.isEven
-              ? colors.surface
-              : colors.surfaceVariant.withOpacity(0.3),
-          border: Border(bottom: BorderSide(
-            color: colors.outline.withOpacity(0.3),
-            width: 0.5,
-          )),
+                  ? colors.surface
+                  : colors.surfaceVariant.withOpacity(0.3),
+          border: Border(
+            bottom: BorderSide(
+              color: colors.outline.withOpacity(0.3),
+              width: 0.5,
+            ),
+          ),
         ),
         child: Padding(
           padding: density.cellPadding,
@@ -2153,15 +2393,15 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 child: column.cellBuilder != null
                     ? column.cellBuilder!(item)
                     : Text(
-                  column.valueGetter(item).toString(),
-                  style: TextStyle(
-                    fontSize: density.fontSize,
-                    color: colors.onSurface,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
+                        column.valueGetter(item).toString(),
+                        style: TextStyle(
+                          fontSize: density.fontSize,
+                          color: colors.onSurface,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
               );
             }).toList(),
           ),
@@ -2171,15 +2411,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildStaticHeaderCellFixed(
-      DataColumnConfig<T> column,
-      double width,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      ) {
+    DataColumnConfig<T> column,
+    double width,
+    DataTableColorScheme colors,
+    DensityConfig density,
+  ) {
     final isSorted = _sortedField == column.field;
-    final filterOption = widget.columnFilters
-        .where((f) => f.field == column.field)
-        .firstOrNull;
+    final filterOption =
+        widget.columnFilters.where((f) => f.field == column.field).firstOrNull;
 
     return Container(
       width: width,
@@ -2192,19 +2431,23 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: column.sortable ? () {
-                  setState(() {
-                    if (_sortedField == column.field) {
-                      _isAscending = !_isAscending;
-                    } else {
-                      _sortedField = column.field;
-                      _isAscending = true;
-                    }
-                    widget.onSort?.call(_sortedField!, _isAscending);
-                  });
-                } : null,
+                onTap: column.sortable
+                    ? () {
+                        setState(() {
+                          if (_sortedField == column.field) {
+                            _isAscending = !_isAscending;
+                          } else {
+                            _sortedField = column.field;
+                            _isAscending = true;
+                          }
+                          widget.onSort?.call(_sortedField!, _isAscending);
+                        });
+                      }
+                    : null,
                 child: MouseRegion(
-                  cursor: column.sortable ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                  cursor: column.sortable
+                      ? SystemMouseCursors.click
+                      : SystemMouseCursors.basic,
                   child: Row(
                     children: [
                       Flexible(
@@ -2224,10 +2467,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                         const SizedBox(width: 4),
                         Icon(
                           isSorted
-                              ? (_isAscending ? Icons.arrow_upward : Icons.arrow_downward)
+                              ? (_isAscending
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward)
                               : Icons.unfold_more,
                           size: 14,
-                          color: isSorted ? colors.primary : colors.onSurfaceVariant,
+                          color: isSorted
+                              ? colors.primary
+                              : colors.onSurfaceVariant,
                         ),
                       ],
                     ],
@@ -2255,30 +2502,36 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildFixedRegularBody(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return Row(
       children: [
         if (widget.enableSelection)
           _buildSelectionBodyColumn(colors, density, visibleRows),
         Expanded(
-          child: _buildScrollableBodyContent(theme, colors, density, visibleRows, visibleColumns),
+          child: _buildScrollableBodyContent(
+            theme,
+            colors,
+            density,
+            visibleRows,
+            visibleColumns,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildStickyTable(
-      InnovareDataTableThemeData theme,
-      DataTableColorScheme colors,
-      DensityConfig density,
-      List<T> visibleRows,
-      List<DataColumnConfig<T>> visibleColumns,
-      ) {
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<T> visibleRows,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
     return StickyDataTable<T>(
       key: const ValueKey('sticky_table'),
       columns: visibleColumns,
@@ -2310,11 +2563,11 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   List<DataColumnConfig<T>> _getVisibleColumns<T>(
-      BuildContext context,
-      List<DataColumnConfig<T>> allColumns,
-      List<String> priorityColumns,
-      bool enableResponsive,
-      ) {
+    BuildContext context,
+    List<DataColumnConfig<T>> allColumns,
+    List<String> priorityColumns,
+    bool enableResponsive,
+  ) {
     if (!enableResponsive) return allColumns;
 
     final maxColumns = ResponsiveTableManager.getMaxVisibleColumns(context);
@@ -2352,10 +2605,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   List<T> _applyColumnFilters<T>(
-      List<T> original,
-      Map<String, dynamic> columnFilters,
-      List<DataColumnConfig<T>> columns,
-      ) {
+    List<T> original,
+    Map<String, dynamic> columnFilters,
+    List<DataColumnConfig<T>> columns,
+  ) {
     var filtered = original;
 
     for (final entry in columnFilters.entries) {
@@ -2371,17 +2624,20 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         final itemValue = column.valueGetter(item);
         if (itemValue == null) return false;
 
-        return itemValue
-            .toString()
-            .toLowerCase()
-            .contains(filterValue.toString().toLowerCase());
+        return itemValue.toString().toLowerCase().contains(
+              filterValue.toString().toLowerCase(),
+            );
       }).toList();
     }
 
     return filtered;
   }
 
-  Widget _buildPagination(int filteredCount, DataTableColorScheme colors, DensityConfig density) {
+  Widget _buildPagination(
+    int filteredCount,
+    DataTableColorScheme colors,
+    DensityConfig density,
+  ) {
     final totalCount = _getEffectiveTotalCount();
     final currentPage = _getEffectiveCurrentPage();
     final totalPages = _getEffectiveTotalPages();
@@ -2391,8 +2647,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
     final start = (currentPage * pageSize) - (pageSize - 1);
     final end = (start + (pageSize - 1)).clamp(0, totalCount);
-    final actualEnd = _useDataSource ?
-    (start + (_dataController!.currentData.length - 1)) : end;
+    final actualEnd = _useDataSource
+        ? (start + (_dataController!.currentData.length - 1))
+        : end;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -2433,34 +2690,46 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               ),
               const SizedBox(width: 16),
               MouseRegion(
-                cursor: hasPreviousPage ? SystemMouseCursors.click : SystemMouseCursors.forbidden,
+                cursor: hasPreviousPage
+                    ? SystemMouseCursors.click
+                    : SystemMouseCursors.forbidden,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: hasPreviousPage ? Colors.transparent : colors.surfaceVariant.withOpacity(0.5),
+                    color: hasPreviousPage
+                        ? Colors.transparent
+                        : colors.surfaceVariant.withOpacity(0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_left_rounded,
-                      color: hasPreviousPage ? colors.onSurfaceVariant : colors.onSurfaceVariant.withOpacity(0.5),
+                      color: hasPreviousPage
+                          ? colors.onSurfaceVariant
+                          : colors.onSurfaceVariant.withOpacity(0.5),
                     ),
                     onPressed: hasPreviousPage ? _previousPage : null,
                   ),
                 ),
               ),
               MouseRegion(
-                cursor: hasNextPage ? SystemMouseCursors.click : SystemMouseCursors.forbidden,
+                cursor: hasNextPage
+                    ? SystemMouseCursors.click
+                    : SystemMouseCursors.forbidden,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: hasNextPage ? Colors.transparent : colors.surfaceVariant.withOpacity(0.5),
+                    color: hasNextPage
+                        ? Colors.transparent
+                        : colors.surfaceVariant.withOpacity(0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_right_rounded,
-                      color: hasNextPage ? colors.onSurfaceVariant : colors.onSurfaceVariant.withOpacity(0.5),
+                      color: hasNextPage
+                          ? colors.onSurfaceVariant
+                          : colors.onSurfaceVariant.withOpacity(0.5),
                     ),
                     onPressed: hasNextPage ? _nextPage : null,
                   ),
@@ -2536,7 +2805,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     if (_useDataSource && _dataController != null) {
       // Para DataSource
       print('🔥 PROCESSANDO COM DATA SOURCE...');
-      final currentFilters = List<DataTableFilter>.from(_dataController!.currentRequest.filters);
+      final currentFilters = List<DataTableFilter>.from(
+        _dataController!.currentRequest.filters,
+      );
       currentFilters.removeWhere((f) => f.isQuickFilter);
 
       for (final filterId in activeFilterIds) {
@@ -2552,12 +2823,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         }
 
         if (matchingFilter != null && matchingFilter.value != null) {
-          currentFilters.add(DataTableFilter(
+          currentFilters.add(
+            DataTableFilter(
               field: matchingFilter.field,
               value: matchingFilter.value,
               operator: matchingFilter.operator,
-              type: FilterType.quick
-          ));
+              type: FilterType.quick,
+            ),
+          );
         }
       }
 
@@ -2584,71 +2857,76 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
   Widget _buildEmpty(DataTableColorScheme colors) {
     return Center(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
-        padding: const EdgeInsets.all(48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 800),
-              tween: Tween<double>(begin: 0.0, end: 1.0),
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Opacity(
-                    opacity: value,
-                    child: Icon(
-                      Icons.inbox_rounded,
-                      size: 64,
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 800),
-              tween: Tween<double>(begin: 0.0, end: 1.0),
-              builder: (context, value, child) {
-                return Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
-                  child: Opacity(
-                    opacity: value,
-                    child: Text(
-                      'Nenhum dado encontrado',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 1000),
-              tween: Tween<double>(begin: 0.0, end: 1.0),
-              builder: (context, value, child) {
-                return Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
-                  child: Opacity(
-                    opacity: value,
-                    child: Text(
-                      'Tente ajustar os filtros ou adicionar novos dados',
-                      style: TextStyle(
-                        fontSize: 14,
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Opacity(
+                      opacity: value,
+                      child: Icon(
+                        Icons.inbox_rounded,
+                        size: 64,
                         color: colors.onSurfaceVariant,
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value,
+                      child: Text(
+                        'Nenhum dado encontrado',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: colors.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 1000),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value,
+                      child: Text(
+                        'Tente ajustar os filtros ou adicionar novos dados',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2708,6 +2986,22 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   void didUpdateWidget(InnovareDataTable<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    if (widget.dataSource != oldWidget.dataSource ||
+        widget.controller != oldWidget.controller) {
+      // Limpar listeners antigos se necessário
+      if (_dataController != null && oldWidget.controller == null) {
+        // Se o controller foi criado internamente, removemos o listener
+        _dataController!.removeListener(_onDataSourceChanged);
+      }
+
+      _setupDataSource();
+    }
+
+    // Atualizar config se necessário
+    if (widget.config != oldWidget.config) {
+      _effectiveConfig = widget.config ?? InnovareDataTableConfig<T>.simple();
+    }
+
     if (oldWidget.columns != widget.columns || oldWidget.rows != widget.rows) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _ensureScrollVisibility();
@@ -2715,16 +3009,20 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     }
   }
 
-  Widget _buildQuickActionButton(QuickActionConfig action, DataTableColorScheme colors) {
+  Widget _buildQuickActionButton(
+    QuickActionConfig action,
+    DataTableColorScheme colors,
+  ) {
     return ElevatedButton.icon(
       onPressed: action.onPressed,
       label: Text(
         action.label,
-        style: action.textStyle ?? TextStyle(
-          color: colors.primary,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
+        style: action.textStyle ??
+            TextStyle(
+              color: colors.primary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
       ),
       icon: Icon(
         action.icon,
@@ -2733,24 +3031,22 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: action.backgroundColor ?? colors.primaryLight,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      )
+      ),
     );
   }
 
-  Widget _buildQuickActionsContent(List<QuickActionConfig> quickActions, DataTableColorScheme colors) {
+  Widget _buildQuickActionsContent(
+    List<QuickActionConfig> quickActions,
+    DataTableColorScheme colors,
+  ) {
     if (ResponsiveTableManager.isDesktop(context)) {
       return Row(
         children: widget.quickActions.map((action) {
           return Padding(
             padding: const EdgeInsets.only(left: 8),
-            child: _buildQuickActionButton(
-              action,
-              colors,
-            ),
+            child: _buildQuickActionButton(action, colors),
           );
         }).toList(),
       );
@@ -2759,7 +3055,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     return _buildPopupMenuQuickActions(quickActions, colors);
   }
 
-  Widget _buildPopupMenuQuickActions(List<QuickActionConfig> quickActions, DataTableColorScheme colors) {
+  Widget _buildPopupMenuQuickActions(
+    List<QuickActionConfig> quickActions,
+    DataTableColorScheme colors,
+  ) {
     return PopupMenuButton<QuickActionConfig>(
       icon: Icon(Icons.more_vert_rounded, color: colors.onSurfaceVariant),
       itemBuilder: (context) {
@@ -2772,11 +3071,12 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                 const SizedBox(width: 8),
                 Text(
                   action.label,
-                  style: action.textStyle ?? TextStyle(
-                    color: colors.primary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: action.textStyle ??
+                      TextStyle(
+                        color: colors.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
               ],
             ),
