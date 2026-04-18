@@ -21,7 +21,7 @@ dependencies:
   innovare_core:
     git:
       url: https://github.com/innovare-tech/lib-innv-core.git
-      ref: feature/nova_versao
+      ref: feature/ajustes-connect
 
 dev_dependencies:
   flutter_test:
