@@ -29,7 +29,36 @@ class UnifiedFiltersController<T> extends ChangeNotifier {
     this.dataTableController,
     this.fieldGetter,
     this.searchDebounceDelay = const Duration(milliseconds: 500), // ✅ DEBOUNCE PADRÃO DE 500ms
-  });
+  }) {
+    _initializeDefaultFilters();
+  }
+
+  // Popula o estado inicial com filtros marcados como isDefault: true.
+  // Nao dispara fetchData aqui porque o dataTableController e a propria
+  // InnovareDataTable se encarregam de iniciar a primeira requisicao
+  // ja levando esses filtros em conta.
+  void _initializeDefaultFilters() {
+    if (!config.enableQuickFilters) return;
+
+    final defaults = <UnifiedFilter<T>>[];
+    for (final qConfig in config.quickFiltersConfigs) {
+      for (final filter in qConfig.filters) {
+        if (filter.isDefault) {
+          defaults.add(UnifiedFilter<T>.fromQuickFilter(filter));
+        }
+      }
+    }
+
+    if (defaults.isEmpty) return;
+
+    _state = FilterState<T>(
+      activeFilters: defaults,
+      searchTerm: _state.searchTerm,
+      isLoading: _state.isLoading,
+      error: _state.error,
+      metadata: _state.metadata,
+    );
+  }
 
   // =============================================================================
   // GETTERS

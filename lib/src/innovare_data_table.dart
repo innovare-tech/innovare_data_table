@@ -409,7 +409,30 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       _dataController!.addListener(_onDataSourceChanged);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Aplicar filtros padrão se existirem
+        // Aplicar filtros padrão do UnifiedFiltersController (isDefault: true)
+        if (_unifiedFiltersController != null &&
+            _unifiedFiltersController!.state.activeFilters.isNotEmpty) {
+          final initialFilters = _unifiedFiltersController!.state.activeFilters
+              .where((f) => f.isActive)
+              .map((f) => DataTableFilter(
+                    field: f.field,
+                    value: f.value,
+                    operator: f.operator,
+                    type: f.type == UnifiedFilterType.quick
+                        ? FilterType.quick
+                        : FilterType.advanced,
+                  ))
+              .toList();
+          _dataController!.fetchData(
+            _dataController!.currentRequest.copyWith(
+              filters: initialFilters,
+              page: 1,
+            ),
+          );
+          return;
+        }
+
+        // Caminho legado: filtros default fora do UnifiedFiltersConfig
         if (_activeQuickFilters.isNotEmpty) {
           _handleQuickFilters(_activeQuickFilters);
         } else {
