@@ -1,5 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 
+import 'theme/innovare_design_adapter.dart';
+
 enum DataTableDensity { compact, normal, comfortable, custom }
 
 // Sistema de cores padronizado
@@ -169,6 +171,15 @@ class InnovareDataTableTheme extends InheritedWidget {
   });
 
   static InnovareDataTableThemeData of(BuildContext context) {
+    // Precedência da resolução de cores quando o consumer não customizou:
+    //   1) InnovareDesignTheme (innovare_design) — quando o host instalou um
+    //      preset/identidade no Theme.extensions, herdamos brand, surfaces e
+    //      status semânticos (success/warning/danger) automaticamente. Sem
+    //      hex hardcoded, sem retheming por app.
+    //   2) Material ColorScheme — fallback puro Material (compatibilidade
+    //      com apps que ainda não adotaram o design system).
+    final innvScheme = resolveDataTableColorSchemeFromInnv(context);
+
     final theme = context.dependOnInheritedWidgetOfExactType<InnovareDataTableTheme>();
     if (theme != null) {
       final data = theme.data;
@@ -183,7 +194,7 @@ class InnovareDataTableTheme extends InheritedWidget {
           columnWidth: data.columnWidth,
           rowHeight: data.rowHeight,
           density: data.density,
-          colorScheme: DataTableColorScheme.fromTheme(context),
+          colorScheme: innvScheme ?? DataTableColorScheme.fromTheme(context),
           customDensity: data.customDensity,
         );
       }
@@ -191,7 +202,7 @@ class InnovareDataTableTheme extends InheritedWidget {
     }
     // Sem InnovareDataTableTheme no widget tree: resolve tudo do host.
     return InnovareDataTableThemeData(
-      colorScheme: DataTableColorScheme.fromTheme(context),
+      colorScheme: innvScheme ?? DataTableColorScheme.fromTheme(context),
     );
   }
 

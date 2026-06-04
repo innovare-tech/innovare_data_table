@@ -1,0 +1,323 @@
+# Innovare Data Table — North Star & Roadmap
+
+> Documento-fonte-da-verdade do pacote `innovare_data_table`. Atualize a cada
+> avanço (log no final). Estilo e disciplina: mesmo padrão do `innovare_design`.
+>
+> - **Branch de trabalho:** `feat/adopt-innovare-design`
+> - **Ponto de partida congelado:** `main @ 314770e` (PR #1 da `feature/nova` mergeado) — tag `v0.0.18`
+> - **NÃO deletar `feature/nova`** — apps consumidores ainda apontam pra ela
+> - **Stack:** Flutter `>=3.10` / Dart `>=3.0`
+> - **Preview:** `innovare_data_table/example`
+
+---
+
+## 1. Por que existe (o problema que resolvemos)
+
+A maior parte das telas dos apps Innovare (`app-innv-bolao`, `unic-frontend`,
+`logos_saas_frontend`, `app-innv-franchise-finance`, `tessera-admin-frontend`) é
+**listagem densa de dados**: usuários, transações, pedidos, withdrawals,
+auditoria, tickets, etc. Hoje cada tela reinventa:
+
+- Cabeçalho zebrado, hover, scroll horizontal, sticky.
+- Filtros (texto, enum, range, data).
+- Paginação + ordenação multi-coluna.
+- Mobile (cards) vs desktop (tabela).
+- Empty/error/loading states.
+- Acessibilidade (teclado, screen reader).
+
+O `innovare_data_table` (v0.0.18) já tem **muita coisa pronta** (~3.000 linhas
+no widget core, 31 KB de filtros, sticky table, drag-drop, resize, mobile cards,
+controller HTTP com cache e realtime, virtual scrolling, performance monitor,
+keyboard nav, accessibility utilities). O problema é que:
+
+1. **Não consome o `innovare_design`** → não herda o piso de craft (tokens,
+   primitivas, motion, status colors), tem hex hardcoded e densidade artesanal.
+2. **Tem dívida estrutural** (realtime com TODOs, page indexing inconsistente,
+   5 sistemas de filtro paralelos, sem testes, sem CHANGELOG, README vazio).
+3. **Example não comunica o que o pacote sabe fazer** (menu de botões cru,
+   `primarySwatch: Colors.blue`, sem dark mode, sem preset selector).
+
+**Meta:** transformar o pacote num componente "Oscar-worthy" — DataTable de
+craft que (a) consome o DS, (b) tem regras de negócio sólidas e testadas, e
+(c) tem example showcase que vende a primitiva.
+
+---
+
+## 2. A régua (princípios inegociáveis)
+
+### Definition of Done de uma feature do data_table
+
+Uma feature só está pronta quando:
+
+- [ ] Usa **apenas tokens do `innovare_design`** (cor/tipo/espaço/shape/elevação)
+      — nenhum hex literal, nenhum `BorderRadius.circular(n)` mágico.
+- [ ] Tem **estados completos**: loading (skeleton), vazio, erro, pressed/hover.
+- [ ] Tem **motion** (entrada em cascata, mudança de página, sort animado).
+- [ ] **Números/dinheiro** com tabular figures (`InnvMoneyText` /
+      `InnvTypography.numeric()`).
+- [ ] **Contraste** ok em light e dark.
+- [ ] Tem **teste** no `test/` (controller, source, filtros, paginação, sort).
+- [ ] É demonstrável no **example** com uma página dedicada.
+- [ ] **`flutter analyze`: No issues found.**
+
+### Lista do "não faça"
+
+- Cor hex literal (`Color(0x...)`, `Colors.x`) — usar `InnvColorScheme` ou
+  `InnvStatusColors`.
+- Tamanho de fonte mágico — usar `InnvTypography`.
+- `EdgeInsets`/`SizedBox` fora da escala — usar `InnvSpacing`.
+- `BorderRadius.circular(n)` mágico — usar `InnvShapeScheme`.
+- `Theme.of(context).colorScheme.primary` direto na primitiva — preferir
+  `InnvColorScheme` (via adapter) pra herdar o preset do host.
+- `Material` widget cru em vez das primitivas (`InnvBadge`, `InnvButton`,
+  `InnvEmptyState`, `InnvErrorState`, `InnvSkeleton`).
+- TODOs sem dono em código de produção — abrir issue/seção no roadmap.
+
+---
+
+## 3. Estado atual (snapshot técnico)
+
+### O que existe (`lib/src/`)
+
+| Categoria | Arquivos / símbolos |
+| --- | --- |
+| **Núcleo** | `innovare_data_table.dart` (3.115 linhas — widget + state + config), `data_column_config.dart`, `data_table_responsive.dart`, `data_table_mobile.dart`, `data_table_theme.dart` |
+| **Sticky** | `innovare_stick_data_table.dart` (37 KB), `pure_resizable_header_cell.dart`, `resizable_header_cell.dart`, `drag_drop_column.dart` |
+| **Data sources** | `data_table_source.dart`, `http_data_table_source.dart`, `data_table_controller.dart`, `data_table_models.dart` |
+| **Filtros (5 sistemas)** | `data_table_filters.dart` (31 KB) + `filters/` (filter_models, modern_filters_dialog, quick_filters, smart_filter_pills, unified_filters_bar, unified_filters_controller, filter_pills) |
+| **Mobile** | `mobile/mobile_navigation.dart`, `pull_to_refresh.dart`, `touch_gestures.dart` |
+| **Performance** | `performance/debounced_operations.dart`, `memory_optimization.dart`, `optimized_data_table.dart`, `performance_monitor.dart`, `virtual_scrolling.dart` |
+| **Accessibility** | `accessibility/accessibility_config.dart`, `accessible_widgets.dart`, `high_contrast_theme.dart`, `keyboard_navigation.dart`, `screen_reader_utils.dart` |
+| **Keyboard** | `keyboard/focus_manager.dart`, `keyboard_enhanced_table.dart`, `keyboard_help_dialog.dart`, `keyboard_shortcuts.dart` |
+| **Outros** | `columns/column_management.dart`, `loading/smart_loading.dart`, `quick_actions/quick_action_config.dart`, `search/enhanced_search_field.dart`, `search/search_config.dart` |
+
+### Gaps mapeados
+
+#### A. Dívida estrutural
+
+1. **`_handleRealtimeUpdate` com 3 TODOs** (`data_table_controller.dart` linhas
+   267-277): `insert`/`update`/`delete` chamam `refresh()` em vez de mutação
+   granular. Cada evento de websocket → refetch HTTP completo.
+2. **Page indexing inconsistente**: `search`/`clearFilters` resetam para
+   `page: 1`, `sort`/`addFilter` para `page: 0`. Decidir 0-indexed ou 1-indexed
+   e padronizar (`DataTableRequest` precisa documentar).
+3. **`innovare_core` apontando para branch DELETADO** `feature/ajustes-connect`
+   → todo consumidor precisa de `dependency_overrides`. Trocar para
+   `release/2026-05-19_001` (ref que o `app-innv-bolao` e
+   `app-innv-franchise-finance` já usam).
+4. **README com 21 bytes** (só `# innovare_data_table`).
+5. **Sem `CHANGELOG.md`** — versão 0.0.18, zero histórico documentado.
+6. **Sem pasta `test/`** — toda essa complexidade sem cobertura.
+7. **Sem `ROADMAP.md`** (este arquivo resolve).
+8. **`publish_to:` ausente** no `pubspec.yaml` — pode dar warning em apps
+   consumidores com git deps.
+
+#### B. Acoplamento Material / não-DS
+
+1. `DataTableColorScheme` (`data_table_theme.dart` L21-35): `success` e
+   `warning` são hex fixos (`#4CAF50`, `#FF9800`). Devia derivar de
+   `InnvStatusColors`.
+2. `DensityConfig` (`data_table_theme.dart` L58-120): reinventa escala
+   (12/16/20px) em vez de consumir `InnvSpacing.s2/s4/s6` e `InnvDensity`.
+3. `SkeletonLoader` interno (`innovare_data_table.dart` L29-98) — 70 linhas
+   reinventando o que `InnvSkeleton` já entrega.
+4. Não usa primitivas do DS em lugar nenhum:
+   - Busca/filtros → `InnvTextField`.
+   - Ações de linha → `InnvButton`.
+   - Status cells → `InnvBadge` (`InnvStatusKind`).
+   - Empty state → `InnvEmptyState`.
+   - Error state → `InnvErrorState`.
+
+#### C. Gaps funcionais
+
+1. **5 sistemas de filtro paralelos** (`columnFilters`, `quickFilters`,
+   `advancedFilters`, `unifiedFiltersConfig`, `smartFilterPills`) com
+   sobreposição clara. Decisão: convergir para `UnifiedFiltersController` como
+   fonte de verdade; os outros viram facades de compatibilidade ou são
+   deprecados.
+2. **Multi-sort**: `DataTableController.sort` aceita um único par
+   `(field, ascending)`, mas armazena em lista. A UI não expõe modificador
+   (Shift+click) pra adicionar coluna ao sort. **Implementar.**
+3. **Loading triplicado**: `SkeletonLoader` interno + `smart_loading.dart` +
+   `virtual_scrolling.dart` skeleton. Convergir num só, baseado em
+   `InnvSkeleton`.
+4. **Acessibilidade subutilizada**: `accessibility/` tem 5 arquivos mas o
+   widget core não os usa por padrão (precisa opt-in manual). Tornar default
+   (com escape hatch).
+5. **`HttpDataTableSource`** com cache opcional, mas a invalidação de cache
+   em writes não é exposta para o consumidor.
+
+#### D. Example incompleto/inconsistente
+
+1. `main.dart`: menu de `ElevatedButton`s com `primarySwatch: Colors.blue`.
+   Sem `InnvPreset`, sem dark toggle, sem demonstração das primitivas.
+2. Páginas existentes (6): `test_datasource`, `simple_http`, `products`,
+   `sales-dashboard`, `empty`, `innovare`. Cada uma com tematização própria.
+3. **Faltam páginas** para: realtime updates otimizados, mobile cards
+   (responsive), sticky columns puro, server-side puro, error state, virtual
+   scrolling, acessibilidade (com `Semantics`), drag-drop columns,
+   keyboard-only navigation.
+
+---
+
+## 4. Onde vamos (plano em ondas)
+
+Cada onda é independente, commitável, com `flutter analyze` limpo e (a partir
+da Onda 6) testes verdes.
+
+### Onda 0 — Docs + housekeeping `[EM ANDAMENTO]`
+
+- [x] Criar branch `feat/adopt-innovare-design`.
+- [x] Criar este `ROADMAP.md`.
+- [ ] Reescrever `README.md` (visão, features, getting started, link pra
+      example, link pro `innovare_design`).
+- [ ] Criar `CHANGELOG.md` com histórico até 0.0.18 (extrair de `git log`).
+- [ ] Adicionar `publish_to: none` no `pubspec.yaml`.
+- [ ] Fix `innovare_core` ref em `pubspec.yaml`: `feature/ajustes-connect` →
+      `release/2026-05-19_001` (alinhar com `app-innv-bolao` e franchise).
+- [ ] Criar `test/` com smoke test (`flutter test` retorna 0).
+- [ ] Criar `.windsurf/` no pacote (rule opcional pra trabalhos futuros).
+
+### Onda 1 — Integração com `innovare_design`
+
+- [ ] Adicionar `innovare_design` como dep git no `pubspec.yaml` (ref: `v0.0.1`).
+- [ ] Criar `lib/src/theme/innovare_design_adapter.dart`:
+  - `DataTableColorScheme.fromInnv(BuildContext)` resolve via
+    `context.innv` (`InnovareDesignTheme`).
+  - Status colors mapeiam para `InnvStatusColors` (`success`/`warning`/
+    `error`/`info`).
+- [ ] `data_table_theme.dart`: detectar se `InnovareDesignTheme` está no tree;
+      se sim, usar `fromInnv`; senão, manter `fromTheme` (Material) como
+      fallback (retrocompatível).
+- [ ] `flutter analyze`: No issues found.
+
+### Onda 2 — Refator de tema + skeleton
+
+- [ ] `DensityConfig`: paddings/spacings consomem `InnvSpacing`; fontSizes
+      consomem `InnvTypography` (`body`/`label`).
+- [ ] Substituir `SkeletonLoader` interno por wrapper sobre `InnvSkeleton`
+      (manter API pública pra não quebrar consumidores).
+- [ ] `smart_loading.dart` + skeleton do virtual_scrolling: convergir no
+      mesmo `InnvSkeleton`.
+- [ ] Headers / cells: tipografia via `InnvTypography`.
+
+### Onda 3 — Gaps estruturais (regras de negócio)
+
+- [ ] **Page indexing**: padronizar em **1-indexed** (humano + alinhado com
+      `nextPage`/`previousPage` reais). Documentar em `DataTableRequest`.
+      Atualizar `sort`/`addFilter`/`removeFilter`/`clearFilters` consistentes.
+- [ ] **Realtime updates otimizados**: implementar `_applyInsert`,
+      `_applyUpdate`, `_applyDelete` em `_currentResult` sem refetch
+      (similar a `updateItemWhere`). Testar com mock stream.
+- [ ] **Convergência de filtros**: decidir `UnifiedFiltersController` como
+      fonte de verdade. Os outros 4 sistemas viram:
+  - `columnFilters` → facade que registra na unified.
+  - `quickFilters` → facade.
+  - `advancedFilters` → facade.
+  - `smartFilterPills` → vira UI display da unified.
+  - Marcar deprecados onde aplicável (sem quebrar API).
+- [ ] **Multi-sort UI**: Shift+click no header adiciona coluna ao sort em vez
+      de substituir. Indicador visual (1, 2, 3 nas colunas ordenadas).
+- [ ] **`HttpDataTableSource.invalidateCache(predicate)`** público para o
+      consumidor invalidar após write.
+
+### Onda 4 — Primitivas do DS nas cells
+
+- [ ] Helper `InnvBadgeCell` ou `DataColumnConfig.badge(...)` que renderiza
+      `InnvBadge` semântica.
+- [ ] Helper `DataColumnConfig.action(...)` que renderiza `InnvButton.icon`.
+- [ ] `enhanced_search_field.dart`: substituir TextField interno por
+      `InnvTextField` (mantendo a API).
+- [ ] `EmptyTablePage` / estado vazio do widget core: usar `InnvEmptyState`.
+- [ ] Estado de erro: usar `InnvErrorState` com retry.
+
+### Onda 5 — Example showcase
+
+- [ ] `main.dart` redesenhado:
+  - `MaterialApp` com `InnvPresets.aurora/vibe/slate/lumen` selector.
+  - Dark mode toggle.
+  - Navegação por `InnvNavBar` ou `InnvListTile`.
+  - Aplica `InnovareDesignTheme.toThemeData()` no `MaterialApp.theme`.
+- [ ] Páginas dedicadas (1 por feature, ~10-12 totais):
+  1. **Basic** — colunas, paginação local, sort.
+  2. **Filters unified** — busca + quick + advanced + pills.
+  3. **Server-side HTTP** — `HttpDataTableSource` com paginação real.
+  4. **Realtime updates** — mock stream insert/update/delete otimizados.
+  5. **Mobile responsive** — cards no breakpoint mobile.
+  6. **Sticky columns** — colunas fixas + scroll horizontal.
+  7. **Drag & drop + resize** — reordering manual.
+  8. **Virtual scrolling** — 100k rows.
+  9. **Loading & error states** — todos os estados.
+  10. **Accessibility** — teclado, screen reader, high contrast.
+  11. **Quick actions** — bulk actions + per-row actions.
+  12. **Status cells** — `InnvBadge` em produção (mapa de status reais).
+
+### Onda 6 — Testes
+
+- [ ] `test/data_sources/data_table_controller_test.dart` — paginação,
+      sort, filter, refresh, cache, realtime updates otimizados.
+- [ ] `test/data_sources/http_data_table_source_test.dart` — mock HTTP,
+      cache, invalidação.
+- [ ] `test/filters/unified_filters_controller_test.dart` — adição/remoção,
+      `isDefault`, persistência.
+- [ ] `test/innovare_data_table_widget_test.dart` — renderiza, paginação
+      visual, sort visual, multi-sort, selection.
+- [ ] `test/theme/innovare_design_adapter_test.dart` — light/dark via 4
+      presets, status colors.
+- [ ] Meta inicial: **40 testes verdes**.
+
+### Onda 7 — Release
+
+- [ ] Bump `version: 0.1.0` (mudança grande: adoção do DS).
+- [ ] Atualizar `CHANGELOG.md`.
+- [ ] Merge `feat/adopt-innovare-design` → `main`.
+- [ ] Criar tag `v0.1.0` no GitHub.
+- [ ] **NÃO deletar `feature/nova`** (apps ainda apontam).
+- [ ] Atualizar consumidores (`app-innv-bolao` `pubspec.yaml`):
+      `innovare_data_table` ref `feature/nova` → `v0.1.0` e remover override.
+
+### Pós-release: voltar para o bolão
+
+- [ ] Aplicar `InnovareDataTable` polida em `users_list`, `audit_logs`,
+      `withdrawals_admin`, `payments_admin`, `pool_admin_participants`,
+      `pool_admin_payments` (substituindo `DataTable` cru + helpers locais).
+- [ ] Habilitar `innovare_design_lints` no bolão.
+- [ ] Matar `lib/shared/design/` (kit paralelo) no bolão.
+- [ ] Derivar `bolao_theme.dart` de `BolaoInnvTheme` (eliminar 137 hex).
+
+---
+
+## 5. Decisões em aberto
+
+- **API breaking changes na convergência de filtros**: marcar como `@Deprecated`
+  com mensagem que aponta pra `UnifiedFiltersController`, ou remover de vez?
+  → Proposta: deprecar em 0.1.0, remover em 0.2.0.
+- **Page indexing 0 vs 1**: confirmar com consumidores. → Proposta: 1-indexed
+  (humano), com migração documentada no CHANGELOG.
+- **Server-side default**: hoje `enableServerSide: false`. Considerar inferir
+  do construtor (`withDataSource` → true, default → false). → Já é o caso via
+  factory `withDataSource`, mas o widget aceita ambos via `dataSource` direto
+  no construtor base. Padronizar.
+- **`accessibility/` default-on?** → Proposta: opt-out em vez de opt-in, com
+  flag `disableAccessibility` no `InnovareDataTableConfig` se algum consumidor
+  precisar.
+
+---
+
+## 6. Como rodar o preview
+
+```powershell
+cd C:\Development\Workspaces\Innovare\innovare_data_table\example
+flutter pub get
+flutter run -d chrome
+```
+
+---
+
+## 7. Log de progresso
+
+> Append-only. Data — o que mudou.
+
+- **2026-06-04** — Criada branch `feat/adopt-innovare-design` a partir de
+  `main @ 314770e`. Estado atual mapeado (gaps A/B/C/D). Plano em 7 ondas
+  definido. Tag `v0.0.18` no GitHub como estado congelado de partida.
