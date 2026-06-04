@@ -186,6 +186,23 @@ class InnovareDataTableTheme extends InheritedWidget {
       // Se o consumer usou o colorScheme padrao (hardcoded light),
       // resolve automaticamente a partir do host theme.
       if (identical(data.colorScheme, const DataTableColorScheme())) {
+        // Densidade tokenizada (InnvSpacing + InnvTypography) quando o host
+        // adotou o design system e o consumer NÃO passou um `customDensity`
+        // próprio. Mantém retrocompatibilidade total: assinamos a densidade
+        // tokenizada via `customDensity` + `density: custom` apenas quando
+        // o consumer não tinha intenção própria.
+        DataTableDensity resolvedDensity = data.density;
+        DensityConfig? resolvedCustomDensity = data.customDensity;
+        if (resolvedCustomDensity == null) {
+          final tokenized = resolveDataTableDensityConfigFromInnv(
+            context,
+            data.density,
+          );
+          if (tokenized != null) {
+            resolvedCustomDensity = tokenized;
+            resolvedDensity = DataTableDensity.custom;
+          }
+        }
         return InnovareDataTableThemeData(
           headerBackgroundColor: data.headerBackgroundColor,
           headerTextStyle: data.headerTextStyle,
@@ -193,16 +210,26 @@ class InnovareDataTableTheme extends InheritedWidget {
           rowStripedColor: data.rowStripedColor,
           columnWidth: data.columnWidth,
           rowHeight: data.rowHeight,
-          density: data.density,
+          density: resolvedDensity,
           colorScheme: innvScheme ?? DataTableColorScheme.fromTheme(context),
-          customDensity: data.customDensity,
+          customDensity: resolvedCustomDensity,
         );
       }
       return data;
     }
     // Sem InnovareDataTableTheme no widget tree: resolve tudo do host.
+    // Mesmo tratamento da densidade tokenizada (sem InnovareDataTableTheme
+    // explicito, o consumer também não passou customDensity).
+    final tokenizedDensity = resolveDataTableDensityConfigFromInnv(
+      context,
+      DataTableDensity.normal,
+    );
     return InnovareDataTableThemeData(
       colorScheme: innvScheme ?? DataTableColorScheme.fromTheme(context),
+      density: tokenizedDensity != null
+          ? DataTableDensity.custom
+          : DataTableDensity.normal,
+      customDensity: tokenizedDensity,
     );
   }
 

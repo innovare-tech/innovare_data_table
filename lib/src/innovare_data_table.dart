@@ -25,8 +25,18 @@ import 'package:innovare_data_table/src/columns/column_management.dart';
 import 'package:innovare_data_table/src/mobile/touch_gestures.dart';
 import 'package:innovare_data_table/src/mobile/pull_to_refresh.dart';
 import 'package:innovare_data_table/src/loading/smart_loading.dart';
+import 'package:innovare_design/innovare_design.dart';
 
-class SkeletonLoader extends StatefulWidget {
+/// Loading placeholder used by the table while data is being fetched.
+///
+/// Delegates to [InnvSkeleton] when the host installed an
+/// [InnovareDesignTheme] in the widget tree — so the shimmer picks up the
+/// brand surfaces and reads correctly in light/dark/glassmorphism presets.
+///
+/// When no design theme is present, falls back to a self-contained shimmer
+/// that uses the Material [ColorScheme] (full backward compatibility with
+/// pure-Material consumers).
+class SkeletonLoader extends StatelessWidget {
   final double width;
   final double height;
   final BorderRadius? borderRadius;
@@ -39,10 +49,43 @@ class SkeletonLoader extends StatefulWidget {
   });
 
   @override
-  State<SkeletonLoader> createState() => _SkeletonLoaderState();
+  Widget build(BuildContext context) {
+    final innv = InnovareDesignTheme.maybeOf(context);
+    if (innv != null) {
+      return InnvSkeleton(
+        width: width,
+        height: height,
+        radius: borderRadius,
+      );
+    }
+    return _MaterialSkeletonShimmer(
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+    );
+  }
 }
 
-class _SkeletonLoaderState extends State<SkeletonLoader>
+/// Material-only shimmer used as the fallback when no [InnovareDesignTheme]
+/// is installed. Mirrors the legacy implementation of `SkeletonLoader`
+/// verbatim so visual output is unchanged for pre-design-system consumers.
+class _MaterialSkeletonShimmer extends StatefulWidget {
+  final double width;
+  final double height;
+  final BorderRadius? borderRadius;
+
+  const _MaterialSkeletonShimmer({
+    required this.width,
+    required this.height,
+    this.borderRadius,
+  });
+
+  @override
+  State<_MaterialSkeletonShimmer> createState() =>
+      _MaterialSkeletonShimmerState();
+}
+
+class _MaterialSkeletonShimmerState extends State<_MaterialSkeletonShimmer>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;

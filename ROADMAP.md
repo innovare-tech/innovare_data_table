@@ -165,41 +165,59 @@ Uma feature só está pronta quando:
 Cada onda é independente, commitável, com `flutter analyze` limpo e (a partir
 da Onda 6) testes verdes.
 
-### Onda 0 — Docs + housekeeping `[EM ANDAMENTO]`
+### Onda 0 — Docs + housekeeping `[PRONTO]`
 
 - [x] Criar branch `feat/adopt-innovare-design`.
 - [x] Criar este `ROADMAP.md`.
-- [ ] Reescrever `README.md` (visão, features, getting started, link pra
+- [x] Reescrever `README.md` (visão, features, getting started, link pra
       example, link pro `innovare_design`).
-- [ ] Criar `CHANGELOG.md` com histórico até 0.0.18 (extrair de `git log`).
-- [ ] Adicionar `publish_to: none` no `pubspec.yaml`.
-- [ ] Fix `innovare_core` ref em `pubspec.yaml`: `feature/ajustes-connect` →
+- [x] Criar `CHANGELOG.md` com histórico até 0.0.18 (extrair de `git log`).
+- [x] Adicionar `publish_to: none` no `pubspec.yaml`.
+- [x] Fix `innovare_core` ref em `pubspec.yaml`: `feature/ajustes-connect` →
       `release/2026-05-19_001` (alinhar com `app-innv-bolao` e franchise).
-- [ ] Criar `test/` com smoke test (`flutter test` retorna 0).
+- [x] Criar `test/` com smoke test (`flutter test` retorna 0).
 - [ ] Criar `.windsurf/` no pacote (rule opcional pra trabalhos futuros).
 
-### Onda 1 — Integração com `innovare_design`
+### Onda 1 — Integração com `innovare_design` `[PRONTO]`
 
-- [ ] Adicionar `innovare_design` como dep git no `pubspec.yaml` (ref: `v0.0.1`).
-- [ ] Criar `lib/src/theme/innovare_design_adapter.dart`:
-  - `DataTableColorScheme.fromInnv(BuildContext)` resolve via
-    `context.innv` (`InnovareDesignTheme`).
+- [x] Adicionar `innovare_design` como dep git no `pubspec.yaml` (ref: `v0.0.1`).
+- [x] Criar `lib/src/theme/innovare_design_adapter.dart`:
+  - `InnovareDesignToDataTableColorScheme.toDataTableColorScheme()`
+    projeta um `InnovareDesignTheme` em `DataTableColorScheme`.
   - Status colors mapeiam para `InnvStatusColors` (`success`/`warning`/
-    `error`/`info`).
-- [ ] `data_table_theme.dart`: detectar se `InnovareDesignTheme` está no tree;
-      se sim, usar `fromInnv`; senão, manter `fromTheme` (Material) como
-      fallback (retrocompatível).
-- [ ] `flutter analyze`: No issues found.
+    `danger.content`).
+- [x] `data_table_theme.dart`: detectar se `InnovareDesignTheme` está no tree;
+      se sim, usar a projeção do adapter; senão, manter `fromTheme` (Material)
+      como fallback (retrocompatível).
+- [x] `flutter analyze` nos arquivos editados: **No issues found**.
+- [x] `flutter test`: **10/10 passed** (incluindo 2 testes de color scheme via
+      preset `aurora` + `vibe`).
 
-### Onda 2 — Refator de tema + skeleton
+### Onda 2 — Refator de tema + skeleton `[PRONTO]`
 
-- [ ] `DensityConfig`: paddings/spacings consomem `InnvSpacing`; fontSizes
-      consomem `InnvTypography` (`body`/`label`).
-- [ ] Substituir `SkeletonLoader` interno por wrapper sobre `InnvSkeleton`
-      (manter API pública pra não quebrar consumidores).
-- [ ] `smart_loading.dart` + skeleton do virtual_scrolling: convergir no
-      mesmo `InnvSkeleton`.
-- [ ] Headers / cells: tipografia via `InnvTypography`.
+- [x] **`DensityConfig` tokenizado** — adapter ganhou
+      `DataTableDensityFromInnv.toInnvDensityConfig({typography})`:
+  - Paddings via `InnvSpacing.md/lg/xl` (idênticos aos statics legacy:
+    12/16/20 horizontal, 8/12/16 vertical).
+  - Row/header heights via fatores `InnvDensity.compact/standard/comfortable`
+    (0.85/1.0/1.15).
+  - Font sizes via `InnvTypography.bodyMedium`/`labelMedium`; respeita
+    `InnvTypography.scale`.
+- [x] **`InnovareDataTableTheme.of` injeta densidade tokenizada
+      automaticamente** quando `InnovareDesignTheme.maybeOf(context) != null`
+      e o consumer não passou `customDensity`. Compat total: apps sem DS
+      continuam recebendo `DensityConfig.compact/normal/comfortable` legacy.
+- [x] **`SkeletonLoader` virou proxy** — `StatelessWidget` que delega para
+      `InnvSkeleton` quando o DS está no tree e cai para um shimmer Material
+      `_MaterialSkeletonShimmer` (idêntico ao código legacy) caso contrário.
+      API pública intacta.
+- [x] `flutter analyze` nos arquivos editados: **No issues found**.
+- [x] `flutter test`: **10/10 passed**.
+- [ ] **Pendências da Onda 2** (carry-over): `smart_loading.dart` + virtual
+      scrolling skeleton ainda mantêm seus próprios shimmer paths. Headers
+      e células ainda não consomem `InnvTypography` diretamente (o ganho
+      atual chega via `densityConfig.fontSize/headerFontSize`). Migrar
+      depois junto da Onda 4 (primitivas nas cells).
 
 ### Onda 3 — Gaps estruturais (regras de negócio)
 
@@ -321,3 +339,17 @@ flutter run -d chrome
 - **2026-06-04** — Criada branch `feat/adopt-innovare-design` a partir de
   `main @ 314770e`. Estado atual mapeado (gaps A/B/C/D). Plano em 7 ondas
   definido. Tag `v0.0.18` no GitHub como estado congelado de partida.
+- **2026-06-04** — **Onda 0 (housekeeping) + Onda 1 (DS color scheme)
+  entregues** (commit `c068c87`). ROADMAP/README/CHANGELOG bootstrap.
+  `publish_to: none`, `innovare_core` repinado para
+  `release/2026-05-19_001`. Adapter `InnovareDesignToDataTableColorScheme`
+  + `InnovareDataTableTheme.of` preferindo o DS. `flutter test`: 3/3
+  passed. `flutter analyze` nos arquivos editados: limpo.
+- **2026-06-04** — **Onda 2 (densidade + skeleton) entregue**. Adapter
+  ganhou `DataTableDensityFromInnv.toInnvDensityConfig({typography})` e
+  `resolveDataTableDensityConfigFromInnv(context, density)`. `SkeletonLoader`
+  refatorado para `StatelessWidget` que delega ao `InnvSkeleton` quando o DS
+  está instalado (e cai para o shimmer Material legacy senão). `flutter test`:
+  10/10 passed. `flutter analyze` nos arquivos editados: limpo. Backlog
+  pré-existente do `lib/` (206 issues) mantido — não introduzi nenhuma; alvo
+  de cleanup virá junto da Onda 4.
