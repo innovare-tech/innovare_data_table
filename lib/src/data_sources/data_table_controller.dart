@@ -23,7 +23,7 @@ class DataTableController<T> extends ChangeNotifier {
   StreamSubscription<DataTableUpdate<T>>? _updatesSubscription;
 
   DataTableController({required DataTableSource<T> dataSource})
-      : _dataSource = dataSource {
+    : _dataSource = dataSource {
     _setupRealtimeUpdates();
   }
 
@@ -128,7 +128,11 @@ class DataTableController<T> extends ChangeNotifier {
   }
 
   // FILTROS
-  Future<void> addFilter(String field, dynamic value, [FilterOperator? operator]) async {
+  Future<void> addFilter(
+    String field,
+    dynamic value, [
+    FilterOperator? operator,
+  ]) async {
     final existingFilters = List<DataTableFilter>.from(_currentRequest.filters);
 
     // Remover filtro existente para este campo
@@ -136,11 +140,13 @@ class DataTableController<T> extends ChangeNotifier {
 
     // Adicionar novo filtro se valor não for vazio
     if (value != null && value.toString().isNotEmpty) {
-      existingFilters.add(DataTableFilter(
-        field: field,
-        value: value,
-        operator: operator ?? FilterOperator.contains,
-      ));
+      existingFilters.add(
+        DataTableFilter(
+          field: field,
+          value: value,
+          operator: operator ?? FilterOperator.contains,
+        ),
+      );
     }
 
     final newRequest = _currentRequest.copyWith(
@@ -156,10 +162,7 @@ class DataTableController<T> extends ChangeNotifier {
         .where((f) => f.field != field)
         .toList();
 
-    final newRequest = _currentRequest.copyWith(
-      filters: newFilters,
-      page: 0,
-    );
+    final newRequest = _currentRequest.copyWith(filters: newFilters, page: 0);
 
     await fetchData(newRequest);
   }
@@ -177,7 +180,46 @@ class DataTableController<T> extends ChangeNotifier {
   // REFRESH
   Future<void> refresh() async {
     _clearCache();
+    _dataSource.clearCache();
     await fetchData();
+  }
+
+  /// Notifica listeners sem refetch. Usar quando os DTOs em [currentData]
+  /// foram mutados in-place (ex.: classes mutaveis / freezed `@unfreezed`).
+  void notifyDataChanged() {
+    notifyListeners();
+  }
+
+  /// Substitui in-place o primeiro item de [currentData] que satisfaca
+  /// [predicate], chamando [updater] para produzir o novo valor. Retorna
+  /// `true` se algo foi atualizado e notifica listeners.
+  ///
+  /// Util quando o T e imutavel (freezed padrao) e o consumidor recebe um
+  /// evento realtime de update de um unico registro: evita um refetch HTTP
+  /// completo.
+  bool updateItemWhere(
+    bool Function(T item) predicate,
+    T Function(T item) updater,
+  ) {
+    final result = _currentResult;
+    if (result == null) return false;
+
+    final index = result.data.indexWhere(predicate);
+    if (index < 0) return false;
+
+    final newData = List<T>.of(result.data);
+    newData[index] = updater(newData[index]);
+
+    _currentResult = DataTableResult<T>(
+      data: newData,
+      totalCount: result.totalCount,
+      page: result.page,
+      pageSize: result.pageSize,
+      metadata: result.metadata,
+    );
+
+    notifyListeners();
+    return true;
   }
 
   // UTILS PRIVADOS
@@ -222,15 +264,15 @@ class DataTableController<T> extends ChangeNotifier {
         refresh();
         break;
       case DataTableUpdateType.insert:
-      // TODO: Implementar inserção otimizada
+        // TODO: Implementar inserção otimizada
         refresh();
         break;
       case DataTableUpdateType.update:
-      // TODO: Implementar update otimizado
+        // TODO: Implementar update otimizado
         refresh();
         break;
       case DataTableUpdateType.delete:
-      // TODO: Implementar remoção otimizada
+        // TODO: Implementar remoção otimizada
         refresh();
         break;
     }

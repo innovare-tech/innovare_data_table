@@ -95,7 +95,7 @@ class _InnovareTestPageState extends State<InnovareTestPage> {
           quickActions: _quickActions,
           config: InnovareDataTableConfig.withUnifiedFilters(
             quickFilters: _quickFilters,
-            advancedFilters: _advancedFilters,
+              advancedFilters: _advancedFilters,
             fieldGetter: (item, field) {
               switch (field) {
                 case 'name':

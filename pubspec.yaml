@@ -18,6 +18,10 @@ dependencies:
     git:
       url: https://github.com/keelvin/kotlinish.git
       ref: main
+  innovare_core:
+    git:
+      url: https://github.com/innovare-tech/lib-innv-core.git
+      ref: feature/ajustes-connect
 
 dev_dependencies:
   flutter_test:

@@ -292,10 +292,10 @@ class _DraggableHeaderCellState<T> extends State<DraggableHeaderCell<T>> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.open_with,
                   size: 16,
-                  color: Colors.white,
+                  color: widget.colors.onPrimary,
                 ),
                 const SizedBox(width: 8),
                 Flexible(
@@ -304,7 +304,7 @@ class _DraggableHeaderCellState<T> extends State<DraggableHeaderCell<T>> {
                     style: TextStyle(
                       fontSize: widget.density.headerFontSize,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: widget.colors.onPrimary,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,

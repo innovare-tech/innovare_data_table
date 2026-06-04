@@ -80,7 +80,7 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
         border: Border(top: BorderSide(color: widget.colors.outline)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: widget.colors.shadow.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -229,12 +229,12 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: const AlwaysStoppedAnimation(Colors.white),
+                    valueColor: AlwaysStoppedAnimation(widget.colors.onPrimary),
                   ),
                 )
                     : Icon(
                   _isExpanded ? Icons.close : Icons.more_vert,
-                  color: Colors.white,
+                  color: widget.colors.onPrimary,
                 ),
               ),
             );
@@ -270,7 +270,7 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
                       border: Border.all(color: widget.colors.outline),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: widget.colors.shadow.withOpacity(0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -393,7 +393,7 @@ class _FilterBottomSheetState<T> extends State<FilterBottomSheet<T>>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: widget.colors.shadow.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),
@@ -538,12 +538,12 @@ class _FilterBottomSheetState<T> extends State<FilterBottomSheet<T>>
                     option.toString(),
                     style: TextStyle(
                       fontSize: 12,
-                      color: isActive ? Colors.white : widget.colors.onSurface,
+                      color: isActive ? widget.colors.onPrimary : widget.colors.onSurface,
                     ),
                   ),
                   backgroundColor: widget.colors.surface,
                   selectedColor: widget.colors.primary,
-                  checkmarkColor: Colors.white,
+                  checkmarkColor: widget.colors.onPrimary,
                 );
               }).toList(),
             ),
@@ -765,7 +765,7 @@ class _SortBottomSheetState extends State<SortBottomSheet>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: widget.colors.shadow.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),
@@ -910,14 +910,14 @@ class _SortBottomSheetState extends State<SortBottomSheet>
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.white : widget.colors.onSurface,
+              color: isSelected ? widget.colors.onPrimary : widget.colors.onSurface,
               size: 20,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : widget.colors.onSurface,
+                color: isSelected ? widget.colors.onPrimary : widget.colors.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),

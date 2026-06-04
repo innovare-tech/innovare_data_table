@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 enum DataTableDensity { compact, normal, comfortable, custom }
 
@@ -8,9 +8,12 @@ class DataTableColorScheme {
   final Color primaryLight;
   final Color surface;
   final Color surfaceVariant;
+  final Color surfaceContainer;
   final Color outline;
   final Color onSurface;
   final Color onSurfaceVariant;
+  final Color onPrimary;
+  final Color shadow;
   final Color success;
   final Color warning;
   final Color error;
@@ -20,16 +23,39 @@ class DataTableColorScheme {
     this.primaryLight = const Color(0xFFE3F2FD),
     this.surface = Colors.white,
     this.surfaceVariant = const Color(0xFFF5F5F5),
+    this.surfaceContainer = const Color(0xFFFAFAFA),
     this.outline = const Color(0xFFE0E0E0),
     this.onSurface = const Color(0xFF212121),
     this.onSurfaceVariant = const Color(0xFF757575),
+    this.onPrimary = Colors.white,
+    this.shadow = Colors.black,
     this.success = const Color(0xFF4CAF50),
     this.warning = const Color(0xFFFF9800),
     this.error = const Color(0xFFF44336),
   });
+
+  /// Resolve cores a partir do [ColorScheme] do tema Material do host.
+  factory DataTableColorScheme.fromTheme(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return DataTableColorScheme(
+      primary: cs.primary,
+      primaryLight: cs.primaryContainer,
+      surface: cs.surface,
+      surfaceVariant: cs.surfaceContainerHighest,
+      surfaceContainer: cs.surfaceContainer,
+      outline: cs.outlineVariant,
+      onSurface: cs.onSurface,
+      onSurfaceVariant: cs.onSurfaceVariant,
+      onPrimary: cs.onPrimary,
+      shadow: cs.shadow,
+      success: const Color(0xFF4CAF50),
+      warning: const Color(0xFFFF9800),
+      error: cs.error,
+    );
+  }
 }
 
-// Configurações de densidade
+// Configuracoes de densidade
 class DensityConfig {
   final double rowHeight;
   final double headerHeight;
@@ -144,7 +170,29 @@ class InnovareDataTableTheme extends InheritedWidget {
 
   static InnovareDataTableThemeData of(BuildContext context) {
     final theme = context.dependOnInheritedWidgetOfExactType<InnovareDataTableTheme>();
-    return theme?.data ?? const InnovareDataTableThemeData();
+    if (theme != null) {
+      final data = theme.data;
+      // Se o consumer usou o colorScheme padrao (hardcoded light),
+      // resolve automaticamente a partir do host theme.
+      if (identical(data.colorScheme, const DataTableColorScheme())) {
+        return InnovareDataTableThemeData(
+          headerBackgroundColor: data.headerBackgroundColor,
+          headerTextStyle: data.headerTextStyle,
+          cellTextStyle: data.cellTextStyle,
+          rowStripedColor: data.rowStripedColor,
+          columnWidth: data.columnWidth,
+          rowHeight: data.rowHeight,
+          density: data.density,
+          colorScheme: DataTableColorScheme.fromTheme(context),
+          customDensity: data.customDensity,
+        );
+      }
+      return data;
+    }
+    // Sem InnovareDataTableTheme no widget tree: resolve tudo do host.
+    return InnovareDataTableThemeData(
+      colorScheme: DataTableColorScheme.fromTheme(context),
+    );
   }
 
   @override

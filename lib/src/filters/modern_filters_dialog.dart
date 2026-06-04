@@ -224,7 +224,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
             label: const Text('Adicionar Filtro'),
             style: ElevatedButton.styleFrom(
               backgroundColor: widget.colors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: widget.colors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
@@ -326,7 +326,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: widget.colors.shadow.withOpacity(0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -449,7 +449,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
                 label: const Text('Criar Preset'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: widget.colors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: widget.colors.onPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
@@ -598,7 +598,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
             label: Text('Aplicar ${_workingFilters.where((f) => f.isActive).length} Filtros'),
             style: ElevatedButton.styleFrom(
               backgroundColor: widget.colors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: widget.colors.onPrimary,
             ),
           ),
         ],
@@ -905,7 +905,7 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
                     backgroundColor: _canCreate()
                         ? widget.colors.primary
                         : widget.colors.onSurfaceVariant.withOpacity(0.3),
-                    foregroundColor: Colors.white,
+                    foregroundColor: widget.colors.onPrimary,
                   ),
                 ),
               ],
@@ -990,10 +990,10 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isValid ? Colors.green.shade50 : Colors.red.shade50,
+        color: isValid ? widget.colors.success.withOpacity(0.1) : widget.colors.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isValid ? Colors.green.shade300 : Colors.red.shade300,
+          color: isValid ? widget.colors.success.withOpacity(0.5) : widget.colors.error.withOpacity(0.5),
         ),
       ),
       child: Row(
@@ -1001,7 +1001,7 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
           Icon(
             isValid ? Icons.check_circle : Icons.error,
             size: 16,
-            color: isValid ? Colors.green.shade700 : Colors.red.shade700,
+            color: isValid ? widget.colors.success : widget.colors.error,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1009,7 +1009,7 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
               message,
               style: TextStyle(
                 fontSize: 12,
-                color: isValid ? Colors.green.shade700 : Colors.red.shade700,
+                color: isValid ? widget.colors.success : widget.colors.error,
               ),
             ),
           ),

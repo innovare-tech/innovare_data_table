@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:innovare_core/data/rest_connect.dart';
 import 'data_table_source.dart';
 import 'data_table_models.dart';
 
@@ -24,6 +25,7 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
   final http.Client? httpClient;
   final Duration timeout;
   final bool enableCache;
+  final RestConnect? customRestConnect;
 
   // Cache opcional
   final Map<String, DataTableResult<T>> _cache = {};
@@ -36,6 +38,7 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
     this.httpClient,
     this.timeout = const Duration(seconds: 30),
     this.enableCache = true,
+    this.customRestConnect,
   });
 
   @override
@@ -61,20 +64,37 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
       final headers = headersBuilder?.call() ?? <String, String>{};
       print('🔍 HTTP FETCH: Headers: $headers');
 
-      // Fazer requisição
-      final client = httpClient ?? http.Client();
       print('🔍 HTTP FETCH: Fazendo requisição...');
-      final response = await client.get(uri, headers: headers).timeout(timeout);
 
-      print('🔍 HTTP FETCH: Status da resposta: ${response.statusCode}');
+      int statusCode;
+      String? body;
+      String? statusText;
+
+      if (customRestConnect != null) {
+        final response = await customRestConnect!.get<dynamic>(url, headers: headers);
+        print('🔍 HTTP FETCH: Status da resposta: ${response.statusCode}');
+
+        statusCode = response.statusCode!;
+        body = response.bodyString;
+        statusText = response.statusText;
+      } else {
+        final client = httpClient ?? http.Client();
+
+        final response = await client.get(uri, headers: headers).timeout(timeout);
+
+        print('🔍 HTTP FETCH: Status da resposta: ${response.statusCode}');
+
+        statusCode = response.statusCode;
+        body = response.body;
+        statusText = response.reasonPhrase;
+      }
+
 
       // Verificar status da resposta
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        print('🔍 HTTP FETCH: Response body (primeiros 100 chars): ${response.body.substring(0, response.body.length.clamp(0, 100))}...');
-
+      if (statusCode >= 200 && statusCode < 300) {
         // ✅ Parse da resposta SEM cast forçado
         print('🔍 HTTP FETCH: Fazendo json.decode...');
-        final jsonData = json.decode(response.body);
+        final jsonData = json.decode(body!);
         print('🔍 HTTP FETCH: JSON decodificado, tipo: ${jsonData.runtimeType}');
 
         print('🔍 HTTP FETCH: Chamando responseParser...');
@@ -91,9 +111,9 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
         return result;
       } else {
         throw HttpException(
-          'HTTP ${response.statusCode}: ${response.reasonPhrase}',
-          response.statusCode,
-          response.body,
+          'HTTP ${statusCode}: ${statusText}',
+          statusCode,
+          body,
         );
       }
     } catch (e, stackTrace) {

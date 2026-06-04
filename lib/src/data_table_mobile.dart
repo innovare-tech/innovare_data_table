@@ -99,7 +99,7 @@ class MobileCardsView<T> extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isSelected ? 0.08 : 0.04),
+                    color: colors.shadow.withOpacity(isSelected ? 0.08 : 0.04),
                     blurRadius: isSelected ? 12 : 6,
                     offset: Offset(0, isSelected ? 4 : 2),
                   ),
