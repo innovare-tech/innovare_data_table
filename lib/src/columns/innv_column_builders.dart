@@ -108,14 +108,12 @@ abstract final class InnvColumns {
       // Sorting/filtering uses the display label — that's almost
       // always the intuitive comparison key for status badges.
       valueGetter: labelOf,
-      cellBuilder: (item) => Align(
+      cellBuilder: (item) => _BadgeCell(
+        label: labelOf(item),
+        kind: kindOf(item),
+        icon: iconOf?.call(item),
+        dense: dense,
         alignment: alignment,
-        child: InnvBadge(
-          label: labelOf(item),
-          kind: kindOf(item),
-          icon: iconOf?.call(item),
-          dense: dense,
-        ),
       ),
     );
   }
@@ -199,5 +197,158 @@ class _ActionsCell<T> extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Cell widget used by [InnvColumns.badge]. Picks between two render
+/// paths at build time:
+///
+/// - When `innovare_design` is installed in the host ([InnovareDesignTheme]
+///   resolvable from `context`), delegates to [InnvBadge]. The badge
+///   reads tokens from the host's design preset (aurora / vibe / slate /
+///   lumen) and stays correct in light and dark automatically.
+///
+/// - When the design system is *not* installed, falls back to a
+///   Material 3 layout that mirrors the same visual shape (tinted
+///   surface + matching border + readable foreground) using only
+///   `Theme.of(context).colorScheme`. This keeps `InnvColumns.badge`
+///   usable from apps that haven't adopted [InnovareDesignTheme] yet,
+///   instead of crashing inside [InnvBadge]'s bang-operator access to
+///   `context.innv`.
+///
+/// This mirrors the same dual-path pattern the data table already uses
+/// for its empty/error states (`_buildEmpty` / `_buildError`).
+class _BadgeCell extends StatelessWidget {
+  final String label;
+  final InnvStatusKind kind;
+  final IconData? icon;
+  final bool dense;
+  final Alignment alignment;
+
+  const _BadgeCell({
+    required this.label,
+    required this.kind,
+    required this.icon,
+    required this.dense,
+    required this.alignment,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final design = InnovareDesignTheme.maybeOf(context);
+    final Widget badge = design != null
+        ? InnvBadge(label: label, kind: kind, icon: icon, dense: dense)
+        : _MaterialBadge(label: label, kind: kind, icon: icon, dense: dense);
+    return Align(alignment: alignment, child: badge);
+  }
+}
+
+/// Material 3 fallback for [InnvBadge] used when [InnovareDesignTheme]
+/// isn't installed in the host. The shape is intentionally identical
+/// (icon? + label inside a pill with tinted surface + border) so apps
+/// don't see a layout shift if/when they adopt the design system.
+///
+/// Colour mapping:
+/// - `danger` / `info` use Material 3's container/onContainer pairs
+///   (`errorContainer`/`onErrorContainer`, `primaryContainer`/
+///   `onPrimaryContainer`) so they pick up the host's brand.
+/// - `success` / `warning` synthesise tinted surfaces from a fixed
+///   semantic hue (emerald / amber) because Material 3 doesn't define
+///   container pairs for them. We compute light/dark variants from
+///   HSL so both modes read correctly without per-app wiring.
+/// - `neutral` uses `surfaceContainerHigh` / `onSurfaceVariant`, same
+///   as the design-system path.
+class _MaterialBadge extends StatelessWidget {
+  final String label;
+  final InnvStatusKind kind;
+  final IconData? icon;
+  final bool dense;
+
+  const _MaterialBadge({
+    required this.label,
+    required this.kind,
+    required this.icon,
+    required this.dense,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final (Color bg, Color line, Color fg) = switch (kind) {
+      InnvStatusKind.success => _tintedTriad(
+          base: const Color(0xFF22C55E),
+          isDark: isDark,
+        ),
+      InnvStatusKind.warning => _tintedTriad(
+          base: const Color(0xFFF59E0B),
+          isDark: isDark,
+        ),
+      InnvStatusKind.danger => (
+          scheme.errorContainer,
+          scheme.error.withValues(alpha: 0.32),
+          scheme.onErrorContainer,
+        ),
+      InnvStatusKind.info => (
+          scheme.primaryContainer,
+          scheme.primary.withValues(alpha: 0.32),
+          scheme.onPrimaryContainer,
+        ),
+      InnvStatusKind.neutral => (
+          scheme.surfaceContainerHigh,
+          scheme.outlineVariant,
+          scheme.onSurfaceVariant,
+        ),
+    };
+
+    final textStyle =
+        (dense ? theme.textTheme.labelSmall : theme.textTheme.labelMedium)
+            ?.copyWith(color: fg, height: 1.0, fontWeight: FontWeight.w500);
+
+    return Container(
+      padding: dense
+          ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+          : const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: line),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: dense ? 12 : 14, color: fg),
+            const SizedBox(width: 4),
+          ],
+          Text(label, style: textStyle),
+        ],
+      ),
+    );
+  }
+
+  /// Derives a (background, border, foreground) triad from a single
+  /// brand-hue [base] colour. Light mode uses a pastel surface with a
+  /// deep readable foreground; dark mode uses a muted surface with a
+  /// brighter foreground. Saturation and lightness are tuned to mimic
+  /// the look of [InnvBadge]'s tokenised palette without depending on
+  /// it.
+  static (Color, Color, Color) _tintedTriad({
+    required Color base,
+    required bool isDark,
+  }) {
+    final hsl = HSLColor.fromColor(base);
+    if (isDark) {
+      final bg = hsl.withLightness(0.18).withSaturation(0.35).toColor();
+      final border = hsl.withLightness(0.32).withSaturation(0.45).toColor();
+      final fg = hsl.withLightness(0.72).toColor();
+      return (bg, border, fg);
+    }
+    final bg = hsl.withLightness(0.94).withSaturation(0.85).toColor();
+    final border = hsl.withLightness(0.78).withSaturation(0.70).toColor();
+    final fg = hsl.withLightness(0.30).toColor();
+    return (bg, border, fg);
   }
 }
