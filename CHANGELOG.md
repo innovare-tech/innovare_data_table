@@ -101,6 +101,28 @@ and the package follows [Semantic Versioning](https://semver.org/).
   `http.Client` so each assertion verifies both the cache state and
   the network impact (e.g. an unaffected entry must not refetch
   after a targeted invalidation).
+- `InnovareDataTable.onSortsChanged` (optional): callback that fires
+  with the **full** sort stack in priority order. Complements the
+  legacy `onSort` (which keeps emitting just the primary). Useful
+  for apps that mirror the sort state somewhere outside the table —
+  a debug panel, a URL query string, a server-side API.
+- **`example/` showcase rebuilt (Wave 5)**: every page now lives on
+  top of the design system. `AppShell` wraps the whole app, owns
+  the active `InnvPreset` (aurora / vibe / slate / lumen) plus
+  `Brightness`, and re-themes everything via
+  `InnovareDesignTheme.toThemeData()`. `ShellHeader` exposes a
+  preset selector + dark toggle on every page. New showcases:
+  - `MultiSortShowcase` — live demonstration of Shift+click +
+    priority badge, with a side panel that mirrors the stack via
+    `onSortsChanged`.
+  - `RealtimeShowcase` — buttons that emit synthetic
+    `DataTableUpdate`s on a streaming source, plus a live counter
+    of `fetch()` calls so the in-place behaviour is visible.
+  - `CacheInvalidationShowcase` — a counting fake `http.Client`
+    plus a side panel listing every cached request; two buttons
+    illustrate "wipe everything" vs `invalidateCache(where: ...)`.
+  - Home page (`HomePage`) replaces the old button menu with a
+    grid of feature cards. Legacy pages still reachable.
 
 ### Changed
 - `innovare_core` git ref re-pinned to `release/2026-05-19_001` (the ref the

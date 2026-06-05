@@ -313,26 +313,35 @@ da Onda 6) testes verdes.
 - [ ] `EmptyTablePage` / estado vazio do widget core: usar `InnvEmptyState`.
 - [ ] Estado de erro: usar `InnvErrorState` com retry.
 
-### Onda 5 — Example showcase
+### Onda 5 — Example showcase `[PARCIAL]`
 
-- [ ] `main.dart` redesenhado:
-  - `MaterialApp` com `InnvPresets.aurora/vibe/slate/lumen` selector.
-  - Dark mode toggle.
-  - Navegação por `InnvNavBar` ou `InnvListTile`.
-  - Aplica `InnovareDesignTheme.toThemeData()` no `MaterialApp.theme`.
-- [ ] Páginas dedicadas (1 por feature, ~10-12 totais):
-  1. **Basic** — colunas, paginação local, sort.
-  2. **Filters unified** — busca + quick + advanced + pills.
-  3. **Server-side HTTP** — `HttpDataTableSource` com paginação real.
-  4. **Realtime updates** — mock stream insert/update/delete otimizados.
-  5. **Mobile responsive** — cards no breakpoint mobile.
-  6. **Sticky columns** — colunas fixas + scroll horizontal.
-  7. **Drag & drop + resize** — reordering manual.
-  8. **Virtual scrolling** — 100k rows.
-  9. **Loading & error states** — todos os estados.
-  10. **Accessibility** — teclado, screen reader, high contrast.
-  11. **Quick actions** — bulk actions + per-row actions.
-  12. **Status cells** — `InnvBadge` em produção (mapa de status reais).
+- [x] `example/lib/shell/app_shell.dart`: `AppShell` (state holder),
+      `AppShellScope` (InheritedWidget), `ShellHeader` (toolbar com
+      preset selector + dark toggle).
+- [x] `main.dart` redesenhado para usar `AppShell` + `HomePage`.
+- [x] `MaterialApp` consome `InnvPresets.resolve(preset, brightness)
+      .toThemeData()` — flipar o preset re-skin todas as páginas
+      vivas (incluindo o `InnovareDataTable` via adapter da Onda 1).
+- [x] Dark mode toggle no header.
+- [x] `pages/home_page.dart`: landing com grid de cards (3 do Wave 3,
+      6 legacy).
+- [x] **Showcases novos** (1 por feature de Wave 3):
+  - [x] `MultiSortShowcase` — multi-sort Shift+click + painel de stack
+        alimentado por `onSortsChanged`.
+  - [x] `RealtimeShowcase` — `StreamingEmployeeSource` (extende
+        `LocalDataTableSource` com stream + contador de fetches);
+        3 botões de mutação + contador visível.
+  - [x] `CacheInvalidationShowcase` — fake `http.Client` que conta
+        requests + painel mostrando `cachedRequests` + 2 botões
+        ("invalidate current page" vs "invalidate all").
+- [x] Novo callback público `InnovareDataTable.onSortsChanged(List
+      <DataTableSort>)` — necessário para o painel showcase de
+      multi-sort espelhar o stack real do widget.
+- [ ] Páginas restantes (não bloqueiam a release; podem ser feitas
+      em sub-onda dedicada): mobile responsive, sticky columns
+      puro, drag & drop + resize, virtual scrolling, loading/error
+      states, accessibility, quick actions, status cells via
+      `InnvBadge` (depende de Onda 4).
 
 ### Onda 6 — Testes
 
@@ -434,6 +443,17 @@ flutter run -d chrome
   retrocompatibilidade. 12 testes novos em `test/realtime_updates_test.dart`
   com `_FakeSource` que conta `fetch()`. `flutter test`: 42/42 verdes
   (smoke 10 + page_indexing 20 + realtime 12).
+- **2026-06-04** — **Onda 5 (parcial) — Example showcase reboot entregue**.
+  `example/lib/shell/app_shell.dart` novo (AppShell + AppShellScope +
+  ShellHeader) com preset selector (aurora/vibe/slate/lumen) + dark
+  toggle. `main.dart` enxuto: só `runApp(AppShell(builder: HomePage))`.
+  3 showcases novos (multi_sort, realtime, cache_invalidation) — cada
+  um exibe a feature da Onda 3 num cenário realista. `HomePage` com
+  grid de cards (Material 3 cards do design system). Para sustentar o
+  showcase de multi-sort, adicionado o callback público `InnovareData
+  Table.onSortsChanged(List<DataTableSort>)`. `flutter test`: **50/50
+  ainda verdes** (zero regressão). `flutter analyze` no `example/`:
+  zero erros, só infos pré-existentes em páginas legacy.
 - **2026-06-04** — **Sub-ondas 3.4 (multi-sort UI) + 3.5 (invalidateCache)
   entregues**. `DataTableController.sortMulti(...)` novo. Header cells
   (`PureResizableHeaderCell`, `ResizableHeaderCell`, `StickyDataTable`)

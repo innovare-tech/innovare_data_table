@@ -211,7 +211,23 @@ class InnovareDataTable<T> extends StatefulWidget {
   final List<T> rows;
   final int pageSize;
   final bool paginationEnabled;
+  /// Legacy single-sort callback. Fires with the **primary** sort
+  /// (`_activeSorts.first`) after every sort change — including when
+  /// the user is building up a multi-column stack via Shift+click.
+  /// Apps that only know about single-column sort keep working: this
+  /// callback emits the same `(field, ascending)` pair as before.
   final void Function(String field, bool ascending)? onSort;
+
+  /// Multi-column sort callback. Fires after every sort change with
+  /// the **full stack** in priority order. The first entry is the
+  /// primary sort; subsequent entries act as tie-breakers. Use this
+  /// when you want to mirror the table's sort state somewhere else
+  /// (e.g. a debug panel, a URL query string, or a server-side
+  /// API that accepts `?sort=name:asc,role:desc`).
+  ///
+  /// `onSort` still fires alongside `onSortsChanged` for backwards
+  /// compatibility — you can subscribe to either or both.
+  final void Function(List<DataTableSort> sorts)? onSortsChanged;
   final Widget Function(T item)? onRowTap;
   final bool isLoading;
   final bool enableSelection;
@@ -244,6 +260,7 @@ class InnovareDataTable<T> extends StatefulWidget {
     this.pageSize = 10,
     this.paginationEnabled = true,
     this.onSort,
+    this.onSortsChanged,
     this.onRowTap,
     this.isLoading = false,
     this.enableSelection = false,
@@ -2894,6 +2911,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       _dataController!.sortMulti(_activeSorts);
     }
     widget.onSort?.call(_sortedField!, _isAscending);
+    widget.onSortsChanged?.call(List<DataTableSort>.unmodifiable(_activeSorts));
   }
 
   void _handleSort(String field, bool ascending) {
