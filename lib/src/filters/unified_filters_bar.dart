@@ -81,14 +81,24 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
   }
 
   void _onFiltersChanged() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) return;
+    setState(() {});
 
-      // Atualizar search controller se necessário
-      final currentSearch = widget.controller.searchTerm ?? '';
-      if (_searchController.text != currentSearch) {
-        _searchController.text = currentSearch;
-      }
+    // Mirror the controller's search term into our `TextEditingController`
+    // **only when it diverges semantically** — i.e. when something other
+    // than the user typing changed it (preset load, `clearSearch`,
+    // `clearAllFilters`). The controller stores the term trimmed, but
+    // the user can legitimately have a trailing space mid-typing (e.g.
+    // "felipe " before completing the surname). If we re-assigned the
+    // text whenever the trimmed forms differ we would wipe that space
+    // and snap the caret back to the end every keystroke — which is
+    // what the "selects everything when I press space" report was.
+    final currentSearch = widget.controller.searchTerm ?? '';
+    if (_searchController.text.trim() != currentSearch.trim()) {
+      _searchController.value = TextEditingValue(
+        text: currentSearch,
+        selection: TextSelection.collapsed(offset: currentSearch.length),
+      );
     }
   }
 
