@@ -325,7 +325,9 @@ class InnovareDataTable<T> extends StatefulWidget {
 
 class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     with TickerProviderStateMixin {
-  int _currentPage = 0;
+  // `_currentPage` segue a convenção 1-indexed do `DataTableRequest`.
+  // A primeira página é 1, nunca 0.
+  int _currentPage = 1;
   String? _sortedField;
   bool _isAscending = true;
   final ScrollController _scrollController = ScrollController();
@@ -516,10 +518,13 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
   int _getEffectiveCurrentPage() {
     if (_useDataSource && _dataController != null) {
-      // Retorna a página atual do controller (que gerencia a página correta)
-      return _dataController!.currentResult?.page ?? 0;
+      // Página atual do controller (1-indexed). Antes do primeiro fetch,
+      // o `currentResult` é null — caímos para a página do request, que
+      // já default em 1.
+      return _dataController!.currentResult?.page ??
+          _dataController!.currentRequest.page;
     }
-    // Para dados locais, usa a página local
+    // Para dados locais, usa a página local (1-indexed).
     return _currentPage;
   }
 
@@ -541,16 +546,16 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     if (_useDataSource && _dataController != null) {
       return _dataController!.currentResult?.hasNextPage ?? false;
     }
-    // Para dados locais
-    return _currentPage < _getEffectiveTotalPages() - 1;
+    // Para dados locais (1-indexed): a página atual ainda não é a última.
+    return _currentPage < _getEffectiveTotalPages();
   }
 
   bool _getEffectiveHasPreviousPage() {
     if (_useDataSource && _dataController != null) {
       return _dataController!.currentResult?.hasPreviousPage ?? false;
     }
-    // Para dados locais
-    return _currentPage > 0;
+    // Para dados locais (1-indexed): a primeira página é 1.
+    return _currentPage > 1;
   }
 
   // Métodos de filtragem integrados
@@ -1608,7 +1613,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     if (_useDataSource && _dataController != null) {
       _dataController!.previousPage();
     } else {
-      if (_currentPage > 0) {
+      if (_currentPage > 1) {
         _changePage(_currentPage - 1);
       }
     }
@@ -1618,7 +1623,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     if (_useDataSource && _dataController != null) {
       _dataController!.nextPage();
     } else {
-      if (_currentPage < _getEffectiveTotalPages() - 1) {
+      if (_currentPage < _getEffectiveTotalPages()) {
         _changePage(_currentPage + 1);
       }
     }
@@ -1634,7 +1639,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final filtered = _getFilteredData();
     if (!widget.paginationEnabled) return filtered;
 
-    final start = _currentPage * widget.pageSize;
+    // `_currentPage` é 1-indexed — ver `DataTableRequest`.
+    final start = (_currentPage - 1) * widget.pageSize;
     final end = (start + widget.pageSize).clamp(0, filtered.length);
     return filtered.sublist(start, end);
   }

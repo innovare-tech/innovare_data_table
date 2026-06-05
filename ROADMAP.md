@@ -219,24 +219,54 @@ da Onda 6) testes verdes.
       atual chega via `densityConfig.fontSize/headerFontSize`). Migrar
       depois junto da Onda 4 (primitivas nas cells).
 
-### Onda 3 — Gaps estruturais (regras de negócio)
+### Onda 3 — Gaps estruturais (regras de negócio) `[EM ANDAMENTO]`
 
-- [ ] **Page indexing**: padronizar em **1-indexed** (humano + alinhado com
-      `nextPage`/`previousPage` reais). Documentar em `DataTableRequest`.
-      Atualizar `sort`/`addFilter`/`removeFilter`/`clearFilters` consistentes.
-- [ ] **Realtime updates otimizados**: implementar `_applyInsert`,
-      `_applyUpdate`, `_applyDelete` em `_currentResult` sem refetch
-      (similar a `updateItemWhere`). Testar com mock stream.
-- [ ] **Convergência de filtros**: decidir `UnifiedFiltersController` como
-      fonte de verdade. Os outros 4 sistemas viram:
+#### 3.1 Page indexing `[PRONTO]`
+
+- [x] **1-indexed everywhere**. `DataTableRequest` documenta a convenção e
+      asserta `page >= 1`. `DataTableResult.hasPreviousPage` agora `page > 1`,
+      `totalPages` retorna `0` para data set vazio. Novos helpers
+      `isFirstPage` / `isLastPage`.
+- [x] **Bug crítico corrigido**: `LocalDataTableSource.fetch` pulava
+      `pageSize` itens na primeira página (`startIndex = page * pageSize`).
+      Agora `(page - 1) * pageSize`.
+- [x] `DataTableController`: `goToPage` rejeita `page < 1`,
+      `sort`/`addFilter`/`removeFilter` resetam para `1` (eram `0`, o que
+      após o assert quebraria).
+- [x] Factories `HttpDataTableSource.laravel/django/custom` + helper
+      `ApiHelpers.parseStandardPagination` + cache preditivo de
+      `smart_loading.dart` alinhados.
+- [x] `InnovareDataTable._currentPage` inicia em `1`; boundaries de
+      `_previousPage`/`_nextPage`/`_getPagedData` ajustados.
+      `MobileBottomActionBar.currentPage` agora aceita 1-indexed.
+- [x] `test/page_indexing_test.dart`: **20/20 testes verdes** cobrindo
+      request defaults, result boundaries, slicing local, controller flows
+      e factories HTTP (Laravel + Django).
+
+#### 3.2 Realtime updates otimizados
+
+- [ ] Implementar `_applyInsert`, `_applyUpdate`, `_applyDelete` em
+      `_currentResult` sem refetch (similar a `updateItemWhere`).
+      Testar com mock stream.
+
+#### 3.3 Convergência de filtros
+
+- [ ] Decidir `UnifiedFiltersController` como fonte de verdade. Os outros 4
+      sistemas viram:
   - `columnFilters` → facade que registra na unified.
   - `quickFilters` → facade.
   - `advancedFilters` → facade.
   - `smartFilterPills` → vira UI display da unified.
   - Marcar deprecados onde aplicável (sem quebrar API).
-- [ ] **Multi-sort UI**: Shift+click no header adiciona coluna ao sort em vez
-      de substituir. Indicador visual (1, 2, 3 nas colunas ordenadas).
-- [ ] **`HttpDataTableSource.invalidateCache(predicate)`** público para o
+
+#### 3.4 Multi-sort UI
+
+- [ ] Shift+click no header adiciona coluna ao sort em vez de substituir.
+      Indicador visual (1, 2, 3 nas colunas ordenadas).
+
+#### 3.5 Cache invalidation
+
+- [ ] `HttpDataTableSource.invalidateCache(predicate)` público para o
       consumidor invalidar após write.
 
 ### Onda 4 — Primitivas do DS nas cells
@@ -353,3 +383,12 @@ flutter run -d chrome
   10/10 passed. `flutter analyze` nos arquivos editados: limpo. Backlog
   pré-existente do `lib/` (206 issues) mantido — não introduzi nenhuma; alvo
   de cleanup virá junto da Onda 4.
+- **2026-06-04** — **Sub-onda 3.1 (page indexing) entregue**. Padronização
+  1-indexed em `DataTableRequest`/`Result`/`Controller`/`Source`/`Http*`
+  factories/`ApiHelpers`/`InnovareDataTable`/`MobileBottomActionBar` +
+  `smart_loading`. Bug crítico corrigido em `LocalDataTableSource.fetch`
+  (pulava `pageSize` itens na primeira página). Novos helpers
+  `isFirstPage`/`isLastPage`. **BREAKING CHANGE** documentada no
+  CHANGELOG (apps que passavam `page: 0` precisam migrar). 20 testes novos
+  em `test/page_indexing_test.dart`. `flutter test`: 30/30 verdes
+  (smoke 10 + page_indexing 20).

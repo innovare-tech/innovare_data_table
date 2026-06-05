@@ -7,6 +7,27 @@ and the package follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### BREAKING CHANGES
+
+- **Page indexing is now 1-indexed everywhere.** `DataTableRequest.page`,
+  `DataTableResult.page`, `DataTableController.goToPage(page)` and every
+  built-in factory (`HttpDataTableSource.laravel`/`.django`/`.custom`),
+  helper (`ApiHelpers.parseStandardPagination`) and widget
+  (`InnovareDataTable`, `MobileBottomActionBar`) treat `1` as the first
+  page — never `0`. `DataTableRequest` now asserts `page >= 1`.
+  - **Bug fixed**: `LocalDataTableSource.fetch` used to skip `pageSize`
+    items on the first page when called with the new default `page = 1`,
+    because `startIndex = page * pageSize`. Now `(page - 1) * pageSize`.
+  - **Apps that previously passed `page: 0`** to `goToPage`, the request
+    constructor, or read `currentResult.page` as 0-indexed must add `+1`
+    on read sites. UI text that hardcoded `'Página ${currentPage + 1}'`
+    must drop the `+1`.
+  - The Laravel/Django factories no longer add `+1` to the outgoing
+    query param — `request.page` is forwarded as-is. The Laravel
+    response parser no longer subtracts `-1` from `current_page`.
+  - `MobileBottomActionBar` (public widget): the `currentPage` argument
+    is now expected 1-indexed.
+
 ### Added
 - `ROADMAP.md` documenting north star, current state and a 7-wave plan to
   promote the package to "Oscar-worthy" craft (see `feat/adopt-innovare-design`).
@@ -26,6 +47,12 @@ and the package follows [Semantic Versioning](https://semver.org/).
     via `InnvTypography.bodyMedium`/`labelMedium`).
   - `resolveDataTableColorSchemeFromInnv(context)` and
     `resolveDataTableDensityConfigFromInnv(context, density)` helpers.
+- `DataTableResult` helpers: `isFirstPage`, `isLastPage`,
+  `totalPages` returns `0` for empty data sets.
+- `test/page_indexing_test.dart`: 20 tests locking the 1-indexed
+  convention end-to-end (request defaults, result boundary getters,
+  `LocalDataTableSource` slicing, controller pagination/sort/filter
+  resets, Laravel/Django factory parsers and URL builders).
 
 ### Changed
 - `innovare_core` git ref re-pinned to `release/2026-05-19_001` (the ref the

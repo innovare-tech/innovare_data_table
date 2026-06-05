@@ -5,6 +5,9 @@ import 'package:innovare_data_table/src/data_table_filters.dart';
 
 class MobileBottomActionBar extends StatefulWidget {
   final int totalItems;
+
+  /// 1-indexed page number (the first page is `1`). Aligned with
+  /// `DataTableRequest`/`DataTableResult` across the package.
   final int currentPage;
   final int totalPages;
   final Function(int page)? onPageChanged;
@@ -107,7 +110,7 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
                     ),
                     if (widget.totalPages > 1)
                       Text(
-                        'Página ${widget.currentPage + 1} de ${widget.totalPages}',
+                        'Página ${widget.currentPage} de ${widget.totalPages}',
                         style: TextStyle(
                           fontSize: 12,
                           color: widget.colors.onSurfaceVariant,
@@ -121,13 +124,13 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
               if (widget.totalPages > 1) ...[
                 _buildPageButton(
                   icon: Icons.chevron_left,
-                  enabled: widget.currentPage > 0,
+                  enabled: widget.currentPage > 1,
                   onPressed: () => widget.onPageChanged?.call(widget.currentPage - 1),
                 ),
                 const SizedBox(width: 8),
                 _buildPageButton(
                   icon: Icons.chevron_right,
-                  enabled: widget.currentPage < widget.totalPages - 1,
+                  enabled: widget.currentPage < widget.totalPages,
                   onPressed: () => widget.onPageChanged?.call(widget.currentPage + 1),
                 ),
                 const SizedBox(width: 16),

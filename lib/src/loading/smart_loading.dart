@@ -248,8 +248,8 @@ class SmartLoadingManager<T> extends ChangeNotifier {
         }
       }
 
-      // Página anterior (se houver)
-      if (currentRequest.page > 0) {
+      // Página anterior (se houver) — 1-indexed, ver `DataTableRequest`.
+      if (currentRequest.page > 1) {
         final prevRequest = currentRequest.copyWith(
           page: currentRequest.page - 1,
         );

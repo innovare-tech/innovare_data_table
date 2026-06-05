@@ -77,9 +77,9 @@ class DataTableController<T> extends ChangeNotifier {
     }
   }
 
-  // PAGINAÇÃO
+  // PAGINAÇÃO ─ page é 1-indexed (ver `DataTableRequest`).
   Future<void> goToPage(int page) async {
-    if (page < 0 || _isLoading) return;
+    if (page < 1 || _isLoading) return;
 
     final newRequest = _currentRequest.copyWith(page: page);
     await fetchData(newRequest);
@@ -121,7 +121,7 @@ class DataTableController<T> extends ChangeNotifier {
 
     final newRequest = _currentRequest.copyWith(
       sorts: existingSorts,
-      page: 0, // Reset para primeira página
+      page: 1, // Reset para primeira página (1-indexed)
     );
 
     await fetchData(newRequest);
@@ -151,7 +151,7 @@ class DataTableController<T> extends ChangeNotifier {
 
     final newRequest = _currentRequest.copyWith(
       filters: existingFilters,
-      page: 0, // Reset para primeira página
+      page: 1, // Reset para primeira página (1-indexed)
     );
 
     await fetchData(newRequest);
@@ -162,7 +162,7 @@ class DataTableController<T> extends ChangeNotifier {
         .where((f) => f.field != field)
         .toList();
 
-    final newRequest = _currentRequest.copyWith(filters: newFilters, page: 0);
+    final newRequest = _currentRequest.copyWith(filters: newFilters, page: 1);
 
     await fetchData(newRequest);
   }
