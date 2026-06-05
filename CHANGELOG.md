@@ -124,6 +124,26 @@ and the package follows [Semantic Versioning](https://semver.org/).
     `valueGetter` mapping, badge widget rendering with the correct
     kind, action visibility/enabled flags, danger colouring and the
     default fixed-width resize config.
+- **Wave 4 — `InnvTextField` in the enhanced search**: when
+  `innovare_design` is installed, the search field above the table
+  now renders an `InnvTextField` (focus-reactive prefix icon, haptic
+  + shake on error, tokenized fill/border) instead of a plain
+  Material `TextField`. The fallback Material path is preserved for
+  apps that haven't adopted the design system yet — same API, same
+  placeholder, same `onChanged` / `onClear` contract.
+- `test/enhanced_search_field_test.dart`: 2 tests pinning the
+  branching (DS present → `InnvTextField`; DS absent → `TextField`).
+- **Wave 4 cleanup**: 133 `withOpacity(x)` callsites mechanically
+  rewritten to `withValues(alpha: x)` across 19 files in `lib/src/`
+  and 2 in `example/lib/`. Unused imports / locals / fields trimmed
+  where safe. Legacy private methods in `innovare_data_table.dart`
+  (`_handleSort`, `_handleSearch`, `_handleFilter`,
+  `_buildSkeletonLoading`, `_buildTable`, `_sortRotation`) marked
+  with `// ignore: unused_*` comments rather than deleted, so the
+  diff is reversible if any of them needs to come back. The
+  predictive-loading `catchError` callback was rewritten as an
+  `onError`-style `.then` so it no longer trips
+  `body_might_complete_normally_catch_error`.
 - **Wave 4 — Empty & error states use design-system primitives**:
   - New `InnovareDataTable` props: `emptyTitle`, `emptyMessage`,
     `emptyIcon`, `emptyAction`, `errorMessage`, `onErrorRetry`.

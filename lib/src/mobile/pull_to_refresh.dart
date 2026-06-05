@@ -155,7 +155,7 @@ class _PullToRefreshWrapperState extends State<PullToRefreshWrapper>
           border: Border.all(color: widget.colors.outline),
           boxShadow: [
             BoxShadow(
-              color: widget.colors.shadow.withOpacity(0.1),
+              color: widget.colors.shadow.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

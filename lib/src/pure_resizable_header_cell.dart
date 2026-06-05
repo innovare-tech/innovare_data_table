@@ -298,7 +298,7 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
                                     borderRadius: BorderRadius.circular(1),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: widget.colors.primary.withOpacity(0.3),
+                                        color: widget.colors.primary.withValues(alpha: 0.3),
                                         blurRadius: 4,
                                         spreadRadius: 1,
                                       ),
@@ -348,11 +348,11 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
         width: double.infinity,
         decoration: BoxDecoration(
           color: _isHoveringCell
-              ? widget.colors.surfaceVariant.withOpacity(0.5)
+              ? widget.colors.surfaceVariant.withValues(alpha: 0.5)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: _isHoveringCell
-              ? Border.all(color: widget.colors.outline.withOpacity(0.5), width: 1)
+              ? Border.all(color: widget.colors.outline.withValues(alpha: 0.5), width: 1)
               : null,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -476,7 +476,7 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
           height: double.infinity,
           decoration: BoxDecoration(
             color: _isHoveringResize || _isResizing
-                ? widget.colors.primary.withOpacity(0.1)
+                ? widget.colors.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
           ),
@@ -488,7 +488,7 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
               decoration: BoxDecoration(
                 color: _isHoveringResize || _isResizing
                     ? widget.colors.primary
-                    : widget.colors.onSurfaceVariant.withOpacity(0.3),
+                    : widget.colors.onSurfaceVariant.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(1),
               ),
             ),

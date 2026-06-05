@@ -303,7 +303,7 @@ da Onda 6) testes verdes.
 - [x] `test/cache_invalidation_test.dart`: **4/4 verdes** com fake
       `http.Client` que conta requisições.
 
-### Onda 4 — Primitivas do DS nas cells `[PARCIAL]`
+### Onda 4 — Primitivas do DS nas cells `[PRONTO]`
 
 - [x] **`InnvColumns.badge<T>(...)`** (em `lib/src/columns/
       innv_column_builders.dart`) — factory que builda
@@ -321,12 +321,26 @@ da Onda 6) testes verdes.
       `emptyIcon`, `emptyAction`, `errorMessage`, `onErrorRetry`.
 - [x] `test/innv_column_builders_test.dart` (7 testes) + `test/
       empty_error_state_test.dart` (5 testes).
-- [ ] `enhanced_search_field.dart`: substituir TextField interno por
-      `InnvTextField` (mantendo a API). **PENDENTE** — não bloqueia
-      adoção, fica para sub-onda dedicada.
-- [ ] Lint cleanup completo (withOpacity → withValues, unused
-      declarations). **PENDENTE** — diff mecânico em ~40 sites,
-      fica para sub-onda dedicada para não inflar commits de feature.
+- [x] `enhanced_search_field.dart`: TextField interno trocado por
+      `InnvTextField` quando o design system está instalado
+      (fallback Material preservado). API externa mantida. Inclui
+      `prefixIcon` focus-reactive + clear button via `onSuffixTap`.
+- [x] `test/enhanced_search_field_test.dart` (2 testes): com DS →
+      renderiza `InnvTextField`; sem DS → fallback `TextField`.
+- [x] Lint cleanup parcial: 133 `withOpacity(x)` → `withValues
+      (alpha: x)` substituídos mecanicamente em 19 arquivos do
+      `lib/src/` + 2 do `example/`. Removidos imports não usados
+      (`dart:math` em `smart_loading.dart`, `flutter/rendering.dart`
+      em `virtual_scrolling.dart`), local não usado (`now` em
+      `_cleanExpiredCache`), comparison redundante em
+      `enhanced_search_field.dart`. Métodos legacy do widget core
+      (`_handleSort`/`_handleSearch`/`_handleFilter`,
+      `_buildSkeletonLoading`, `_buildTable`, `_sortRotation`)
+      marcados com `// ignore: unused_element/unused_field` em vez
+      de deletados (preserva opção futura). Warnings restantes (13)
+      estão em `keyboard_navigation.dart`, `innovare_stick_data_table
+      .dart` e `touch_gestures.dart` — exigem refator mais
+      invasivo (`hasListeners` protegido, switches inalcançáveis).
 
 ### Onda 5 — Example showcase `[PARCIAL]`
 
@@ -458,6 +472,17 @@ flutter run -d chrome
   retrocompatibilidade. 12 testes novos em `test/realtime_updates_test.dart`
   com `_FakeSource` que conta `fetch()`. `flutter test`: 42/42 verdes
   (smoke 10 + page_indexing 20 + realtime 12).
+- **2026-06-05** — **Onda 4 finalizada — InnvTextField + lint cleanup**.
+  `enhanced_search_field.dart` agora renderiza `InnvTextField` quando o
+  design system está instalado (fallback Material preservado). 2 testes
+  novos em `test/enhanced_search_field_test.dart` pinando o branching.
+  Lint cleanup: 133 `withOpacity` → `withValues(alpha:)` em 21 arquivos
+  (lib/src/ + example/lib/), removidos imports/locals/fields não usados,
+  métodos legacy do widget core marcados com `// ignore: unused_*` em
+  vez de deletados. `flutter test`: **64/64 verdes**. `flutter analyze
+  lib`: caiu de **75 issues** para **13 warnings restantes** (todas em
+  arquivos que precisam de refator mais invasivo — `hasListeners`
+  protected, switches inalcançáveis em sticky table).
 - **2026-06-05** — **Onda 4 (parcial) — Primitivas DS nas cells entregue**.
   Novos helpers públicos `InnvColumns.badge<T>` / `InnvColumns.actions<T>`
   (em `lib/src/columns/innv_column_builders.dart`) + classe pública

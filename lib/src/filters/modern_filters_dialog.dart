@@ -119,7 +119,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
       decoration: BoxDecoration(
         color: widget.colors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        border: Border(bottom: BorderSide(color: widget.colors.outline.withOpacity(0.2))),
+        border: Border(bottom: BorderSide(color: widget.colors.outline.withValues(alpha: 0.2))),
       ),
       child: Row(
         children: [
@@ -171,7 +171,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
     return Container(
       decoration: BoxDecoration(
         color: widget.colors.surface,
-        border: Border(bottom: BorderSide(color: widget.colors.outline.withOpacity(0.2))),
+        border: Border(bottom: BorderSide(color: widget.colors.outline.withValues(alpha: 0.2))),
       ),
       child: TabBar(
         controller: _tabController,
@@ -249,7 +249,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: widget.colors.surfaceVariant.withOpacity(0.5),
+              color: widget.colors.surfaceVariant.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
@@ -320,13 +320,13 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: filter.isActive
-              ? widget.colors.primary.withOpacity(0.3)
-              : widget.colors.outline.withOpacity(0.2),
+              ? widget.colors.primary.withValues(alpha: 0.3)
+              : widget.colors.outline.withValues(alpha: 0.2),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.02),
+            color: widget.colors.shadow.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -346,7 +346,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
                   decoration: BoxDecoration(
                     color: filter.isActive
                         ? widget.colors.primary
-                        : widget.colors.onSurfaceVariant.withOpacity(0.3),
+                        : widget.colors.onSurfaceVariant.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -566,7 +566,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
       decoration: BoxDecoration(
         color: widget.colors.surface,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-        border: Border(top: BorderSide(color: widget.colors.outline.withOpacity(0.2))),
+        border: Border(top: BorderSide(color: widget.colors.outline.withValues(alpha: 0.2))),
       ),
       child: Row(
         children: [
@@ -577,7 +577,7 @@ class _ModernFiltersDialogState<T> extends State<ModernFiltersDialog<T>>
             label: const Text('Limpar Todos'),
             style: OutlinedButton.styleFrom(
               foregroundColor: widget.colors.error,
-              side: BorderSide(color: widget.colors.error.withOpacity(0.5)),
+              side: BorderSide(color: widget.colors.error.withValues(alpha: 0.5)),
             ),
           ),
 
@@ -904,7 +904,7 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _canCreate()
                         ? widget.colors.primary
-                        : widget.colors.onSurfaceVariant.withOpacity(0.3),
+                        : widget.colors.onSurfaceVariant.withValues(alpha: 0.3),
                     foregroundColor: widget.colors.onPrimary,
                   ),
                 ),
@@ -990,10 +990,10 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isValid ? widget.colors.success.withOpacity(0.1) : widget.colors.error.withOpacity(0.1),
+        color: isValid ? widget.colors.success.withValues(alpha: 0.1) : widget.colors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isValid ? widget.colors.success.withOpacity(0.5) : widget.colors.error.withOpacity(0.5),
+          color: isValid ? widget.colors.success.withValues(alpha: 0.5) : widget.colors.error.withValues(alpha: 0.5),
         ),
       ),
       child: Row(

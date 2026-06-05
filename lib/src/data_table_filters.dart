@@ -305,9 +305,9 @@ class _AdvancedFiltersDialogState<T> extends State<AdvancedFiltersDialog<T>> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: widget.colors.surfaceVariant.withOpacity(0.5),
+        color: widget.colors.surfaceVariant.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: widget.colors.outline.withOpacity(0.5)),
+        border: Border.all(color: widget.colors.outline.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,10 +630,10 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _canCreateFilter() ? widget.colors.success.withOpacity(0.1) : widget.colors.error.withOpacity(0.1),
+                  color: _canCreateFilter() ? widget.colors.success.withValues(alpha: 0.1) : widget.colors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _canCreateFilter() ? widget.colors.success.withOpacity(0.5) : widget.colors.error.withOpacity(0.5),
+                    color: _canCreateFilter() ? widget.colors.success.withValues(alpha: 0.5) : widget.colors.error.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Row(
@@ -675,10 +675,10 @@ class _FilterBuilderDialogState<T> extends State<_FilterBuilderDialog<T>> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _canCreateFilter()
                         ? widget.colors.primary
-                        : widget.colors.onSurfaceVariant.withOpacity(0.3),
+                        : widget.colors.onSurfaceVariant.withValues(alpha: 0.3),
                     foregroundColor: _canCreateFilter()
                         ? widget.colors.onPrimary
-                        : widget.colors.onSurfaceVariant.withOpacity(0.6),
+                        : widget.colors.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                   child: Text(widget.existingFilter != null ? 'Atualizar' : 'Criar'),
                 ),

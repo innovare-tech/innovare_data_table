@@ -453,7 +453,7 @@ class _LongPressSelectionWrapperState<T> extends State<LongPressSelectionWrapper
                     Positioned.fill(
                       child: Container(
                         decoration: BoxDecoration(
-                          color: widget.colors.primary.withOpacity(0.1),
+                          color: widget.colors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),

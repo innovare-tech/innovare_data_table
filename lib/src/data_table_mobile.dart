@@ -93,13 +93,13 @@ class MobileCardsView<T> extends StatelessWidget {
                 borderRadius: config.cardBorderRadius,
                 border: Border.all(
                   color: isSelected
-                      ? colors.primary.withOpacity(0.5)
-                      : colors.outline.withOpacity(0.3),
+                      ? colors.primary.withValues(alpha: 0.5)
+                      : colors.outline.withValues(alpha: 0.3),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.shadow.withOpacity(isSelected ? 0.08 : 0.04),
+                    color: colors.shadow.withValues(alpha: isSelected ? 0.08 : 0.04),
                     blurRadius: isSelected ? 12 : 6,
                     offset: Offset(0, isSelected ? 4 : 2),
                   ),
@@ -222,9 +222,9 @@ class MobileCardsView<T> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.surfaceVariant.withOpacity(0.3),
+        color: colors.surfaceVariant.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.outline.withOpacity(0.2)),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: visibleFields.asMap().entries.map((entry) {
@@ -239,7 +239,7 @@ class MobileCardsView<T> extends StatelessWidget {
                 const SizedBox(height: 8),
                 Divider(
                   height: 1,
-                  color: colors.outline.withOpacity(0.2),
+                  color: colors.outline.withValues(alpha: 0.2),
                 ),
                 const SizedBox(height: 8),
               ],

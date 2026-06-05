@@ -127,10 +127,10 @@ class _FilterPillsBarState extends State<FilterPillsBar>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: widget.colors.surfaceVariant.withOpacity(0.3),
+            color: widget.colors.surfaceVariant.withValues(alpha: 0.3),
             border: Border(
               bottom: BorderSide(
-                color: widget.colors.outline.withOpacity(0.2),
+                color: widget.colors.outline.withValues(alpha: 0.2),
                 width: 0.5,
               ),
             ),
@@ -188,7 +188,7 @@ class _FilterPillsBarState extends State<FilterPillsBar>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
-                color: pill.color?.withOpacity(0.1) ?? widget.colors.primaryLight,
+                color: pill.color?.withValues(alpha: 0.1) ?? widget.colors.primaryLight,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: pill.color ?? widget.colors.primary,

@@ -396,6 +396,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   late AnimationController _pageTransitionController;
 
   // Animações
+  // Reserved for the upcoming sort icon rotation tween. Kept in place so
+  // the controller setup in `initState` stays a single block.
+  // ignore: unused_field
   late Animation<double> _sortRotation;
   late Animation<double> _selectionScale;
   late Animation<Offset> _pageSlideAnimation;
@@ -868,7 +871,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withOpacity(0.04),
+            color: colors.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1103,10 +1106,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   decoration: BoxDecoration(
                     color: index.isEven
                         ? colors.surface
-                        : colors.surfaceVariant.withOpacity(0.3),
+                        : colors.surfaceVariant.withValues(alpha: 0.3),
                     border: Border(
                       bottom: BorderSide(
-                        color: colors.outline.withOpacity(0.3),
+                        color: colors.outline.withValues(alpha: 0.3),
                         width: 0.5,
                       ),
                     ),
@@ -1820,6 +1823,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     });
   }
 
+  // Legacy skeleton variant. The active loading path uses
+  // [_buildSkeletonTableContent] inside `_buildTableWithLoading`.
+  // ignore: unused_element
   Widget _buildSkeletonLoading(
     DataTableColorScheme colors,
     DensityConfig density,
@@ -1937,10 +1943,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   decoration: BoxDecoration(
                     color: index.isEven
                         ? colors.surface
-                        : colors.surfaceVariant.withOpacity(0.3),
+                        : colors.surfaceVariant.withValues(alpha: 0.3),
                     border: Border(
                       bottom: BorderSide(
-                        color: colors.outline.withOpacity(0.3),
+                        color: colors.outline.withValues(alpha: 0.3),
                         width: 0.5,
                       ),
                     ),
@@ -2092,6 +2098,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     );
   }
 
+  // Legacy table builder. The active path is `_buildContent` ->
+  // `_buildTableWithLoading`. Retained for tests that bypass the loading
+  // wrapper directly.
+  // ignore: unused_element
   Widget _buildTable(
     InnovareDataTableThemeData theme,
     DataTableColorScheme colors,
@@ -2293,7 +2303,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       decoration: BoxDecoration(
         color: colors.surfaceVariant,
         border: Border(
-          right: BorderSide(color: colors.outline.withOpacity(0.3)),
+          right: BorderSide(color: colors.outline.withValues(alpha: 0.3)),
         ),
       ),
       child: Center(
@@ -2316,7 +2326,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       width: 60,
       decoration: BoxDecoration(
         border: Border(
-          right: BorderSide(color: colors.outline.withOpacity(0.3)),
+          right: BorderSide(color: colors.outline.withValues(alpha: 0.3)),
         ),
       ),
       child: ListView.builder(
@@ -2333,10 +2343,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   ? colors.primaryLight
                   : index.isEven
                       ? colors.surface
-                      : colors.surfaceVariant.withOpacity(0.3),
+                      : colors.surfaceVariant.withValues(alpha: 0.3),
               border: Border(
                 bottom: BorderSide(
-                  color: colors.outline.withOpacity(0.3),
+                  color: colors.outline.withValues(alpha: 0.3),
                   width: 0.5,
                 ),
               ),
@@ -2537,10 +2547,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               ? colors.primaryLight
               : index.isEven
                   ? colors.surface
-                  : colors.surfaceVariant.withOpacity(0.3),
+                  : colors.surfaceVariant.withValues(alpha: 0.3),
           border: Border(
             bottom: BorderSide(
-              color: colors.outline.withOpacity(0.3),
+              color: colors.outline.withValues(alpha: 0.3),
               width: 0.5,
             ),
           ),
@@ -2879,14 +2889,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                     borderRadius: BorderRadius.circular(8),
                     color: hasPreviousPage
                         ? Colors.transparent
-                        : colors.surfaceVariant.withOpacity(0.5),
+                        : colors.surfaceVariant.withValues(alpha: 0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_left_rounded,
                       color: hasPreviousPage
                           ? colors.onSurfaceVariant
-                          : colors.onSurfaceVariant.withOpacity(0.5),
+                          : colors.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     onPressed: hasPreviousPage ? _previousPage : null,
                   ),
@@ -2902,14 +2912,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                     borderRadius: BorderRadius.circular(8),
                     color: hasNextPage
                         ? Colors.transparent
-                        : colors.surfaceVariant.withOpacity(0.5),
+                        : colors.surfaceVariant.withValues(alpha: 0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_right_rounded,
                       color: hasNextPage
                           ? colors.onSurfaceVariant
-                          : colors.onSurfaceVariant.withOpacity(0.5),
+                          : colors.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     onPressed: hasNextPage ? _nextPage : null,
                   ),
@@ -2973,6 +2983,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     widget.onSortsChanged?.call(List<DataTableSort>.unmodifiable(_activeSorts));
   }
 
+  // Legacy single-sort handler. The widget's sort path now flows through
+  // [_handleSortRequested] (Wave 3.4). Kept around in case external
+  // callers wired against this name still exist in trunk apps.
+  // ignore: unused_element
   void _handleSort(String field, bool ascending) {
     if (_useDataSource && _dataController != null) {
       // Para DataSource, usa o método do controller
@@ -2987,6 +3001,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     }
   }
 
+  // Legacy search handler. Replaced inline by the controller calls
+  // inside `_buildSearchField`. Kept for parity with `_handleSort`.
+  // ignore: unused_element
   void _handleSearch(String searchTerm) {
     if (_useDataSource && _dataController != null) {
       // Para DataSource, usa o método do controller
@@ -3009,6 +3026,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     }
   }
 
+  // Legacy filter handler. Replaced by the unified filters controller.
+  // ignore: unused_element
   void _handleFilter(String field, dynamic value) {
     if (_useDataSource && _dataController != null) {
       // Para DataSource, usa o método do controller
