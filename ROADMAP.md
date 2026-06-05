@@ -260,15 +260,39 @@ da Onda 6) testes verdes.
       os caminhos + fallbacks com um `_FakeSource` que expõe
       `StreamController` e conta `fetch()`.
 
-#### 3.3 Convergência de filtros
+#### 3.3 Convergência de filtros `[PRONTO — deprecation-only]`
 
-- [ ] Decidir `UnifiedFiltersController` como fonte de verdade. Os outros 4
-      sistemas viram:
-  - `columnFilters` → facade que registra na unified.
-  - `quickFilters` → facade.
-  - `advancedFilters` → facade.
-  - `smartFilterPills` → vira UI display da unified.
-  - Marcar deprecados onde aplicável (sem quebrar API).
+- [x] Auditados os 5 sistemas de filtro existentes:
+  - `QuickFilter<T>` / `QuickFiltersConfig<T>` (primitiva canônica)
+  - `ColumnFilterOption<T>` / `HeaderColumnFilter` (primitiva canônica)
+  - `AdvancedFilterConfig<T>` / `ActiveFilter` (primitiva canônica)
+  - `SearchConfig<T>` (primitiva canônica)
+  - `UnifiedFilter<T>` / `UnifiedFiltersController<T>` (camada
+    convergente, **agora exportada**)
+- [x] Documentação canônica em `docs/MIGRATING_FILTERS.md` com a
+      matriz de migração, recipes e cronograma (deprecar em 0.0.19,
+      remover em 0.2.0).
+- [x] Exports novos no barrel da lib:
+      `src/filters/filter_models.dart` (tipos `UnifiedFilter`,
+      `UnifiedFiltersConfig`, `UnifiedFilterType`, `FilterCategory`,
+      `FilterState`, `FilterPreset`) e
+      `src/filters/unified_filters_controller.dart`
+      (`UnifiedFiltersController`).
+- [x] `@Deprecated('Move to InnovareDataTableConfig — removed in
+      v0.2.0. See docs/MIGRATING_FILTERS.md')` aplicado em:
+  - `InnovareDataTable.columnFilters` (prop direta)
+  - `InnovareDataTable.advancedFilters` (prop direta)
+- [x] `test/filter_convergence_test.dart` (4 testes): exports do
+      barrel acessíveis + factories `UnifiedFilter.fromQuickFilter` /
+      `.fromAdvancedFilter` / `.search` + regressão nas duas props
+      deprecated (renderizam sem crash). Decisão de **não remover
+      agora** preservada nos testes via
+      `// ignore_for_file: deprecated_member_use_from_same_package`.
+- **Decisão estratégica**: nenhum dos 5 widgets/configs concretos foi
+  deprecado. A convergência se dá no **modelo de dado** (todos
+  podem ser expressos como `UnifiedFilter<T>` e gerenciados por
+  `UnifiedFiltersController<T>`). Os widgets continuam ortogonais
+  porque resolvem UX distintos (chips vs header vs dialog vs busca).
 
 #### 3.4 Multi-sort UI `[PRONTO]`
 
@@ -472,6 +496,20 @@ flutter run -d chrome
   retrocompatibilidade. 12 testes novos em `test/realtime_updates_test.dart`
   com `_FakeSource` que conta `fetch()`. `flutter test`: 42/42 verdes
   (smoke 10 + page_indexing 20 + realtime 12).
+- **2026-06-05** — **Sub-onda 3.3 (convergência de filtros) entregue**.
+  Deprecation-only — zero remoções. `docs/MIGRATING_FILTERS.md` novo
+  com matriz de migração, recipes e cronograma (v0.0.19 deprecar,
+  v0.2.0 remover). Exports adicionados no barrel:
+  `src/filters/filter_models.dart` + `src/filters/unified_filters
+  _controller.dart` (`UnifiedFilter`, `UnifiedFiltersConfig`,
+  `UnifiedFilterType`, `FilterCategory`, `FilterState`,
+  `FilterPreset`, `UnifiedFiltersController`). `@Deprecated` aplicado
+  em `InnovareDataTable.columnFilters` e `.advancedFilters` (props
+  diretas duplicadas). 4 testes novos em `filter_convergence_test
+  .dart`. `flutter test`: **68/68 verdes**. Decisão chave: a
+  convergência se dá no **modelo de dado** (todos os filtros
+  exprimem como `UnifiedFilter<T>`), não nos widgets — eles
+  continuam ortogonais (chips vs header vs dialog vs busca).
 - **2026-06-05** — **Onda 4 finalizada — InnvTextField + lint cleanup**.
   `enhanced_search_field.dart` agora renderiza `InnvTextField` quando o
   design system está instalado (fallback Material preservado). 2 testes

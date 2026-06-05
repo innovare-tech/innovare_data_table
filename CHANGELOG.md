@@ -124,6 +124,30 @@ and the package follows [Semantic Versioning](https://semver.org/).
     `valueGetter` mapping, badge widget rendering with the correct
     kind, action visibility/enabled flags, danger colouring and the
     default fixed-width resize config.
+- **Wave 3.3 — Filter convergence (deprecation-only)**:
+  - New `docs/MIGRATING_FILTERS.md` mapping the five filter
+    primitives (`QuickFilter`, `ColumnFilterOption`,
+    `AdvancedFilterConfig`, `SearchConfig`, plus the unified
+    `UnifiedFilter` layer) and declaring the canonical path.
+  - Barrel exports for the previously-internal unified primitives:
+    `src/filters/filter_models.dart` (`UnifiedFilter`,
+    `UnifiedFiltersConfig`, `UnifiedFilterType`, `FilterCategory`,
+    `FilterState`, `FilterPreset`) and
+    `src/filters/unified_filters_controller.dart`
+    (`UnifiedFiltersController`).
+  - `@Deprecated('Move to InnovareDataTableConfig — removed in
+    v0.2.0. See docs/MIGRATING_FILTERS.md')` lands on
+    `InnovareDataTable.columnFilters` and
+    `InnovareDataTable.advancedFilters` (the two top-level filter
+    props that duplicate fields already available on
+    `InnovareDataTableConfig`). The widget still honours both for
+    v0.0.19+ — apps see the warning and can migrate at their pace.
+  - `test/filter_convergence_test.dart`: 4 tests pinning (1) that
+    every unified primitive is reachable from the public barrel,
+    (2) that the `UnifiedFilter.fromQuickFilter` /
+    `.fromAdvancedFilter` / `.search` factories preserve labels,
+    and (3) that both deprecated top-level props still mount the
+    widget without crashing — regression net for v0.0.19 → v0.2.0.
 - **Wave 4 — `InnvTextField` in the enhanced search**: when
   `innovare_design` is installed, the search field above the table
   now renders an `InnvTextField` (focus-reactive prefix icon, haptic

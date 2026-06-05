@@ -253,7 +253,38 @@ class InnovareDataTable<T> extends StatefulWidget {
   final void Function(List<T> selectedItems)? onSelectionChanged;
   final String? title;
   final DataTableDensity density;
+  /// Per-column header filters.
+  ///
+  /// **Deprecated since v0.0.19**: moved into [InnovareDataTableConfig]
+  /// to converge with `quickFiltersConfigs` / `advancedFiltersConfigs`
+  /// / `unifiedFiltersConfig`. The widget continues to honour this
+  /// top-level prop in v0.0.19 — it folds onto the same code path as
+  /// the canonical one — but it **will be removed in v0.2.0**.
+  ///
+  /// Migration: pass the same list via
+  /// `InnovareDataTableConfig(...)` (or a future
+  /// `UnifiedFiltersConfig.columnFilters`). See
+  /// `docs/MIGRATING_FILTERS.md` for the full guide.
+  @Deprecated(
+    'Move to InnovareDataTableConfig — removed in v0.2.0. '
+    'See docs/MIGRATING_FILTERS.md',
+  )
   final List<ColumnFilterOption<T>> columnFilters;
+
+  /// Top-level shortcut for advanced filters.
+  ///
+  /// **Deprecated since v0.0.19**: duplicates
+  /// `InnovareDataTableConfig.advancedFiltersConfigs` /
+  /// `unifiedFiltersConfig.advancedFiltersConfigs`. The widget honours
+  /// this list in v0.0.19 (folds onto the same path), but it **will be
+  /// removed in v0.2.0**.
+  ///
+  /// Migration: pass the same list via `InnovareDataTableConfig`. See
+  /// `docs/MIGRATING_FILTERS.md`.
+  @Deprecated(
+    'Move to InnovareDataTableConfig.advancedFiltersConfigs — removed in '
+    'v0.2.0. See docs/MIGRATING_FILTERS.md',
+  )
   final List<AdvancedFilterConfig<T>> advancedFilters;
   final bool enableResponsive;
   final List<String> priorityColumns;
