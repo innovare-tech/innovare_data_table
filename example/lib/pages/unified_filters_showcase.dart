@@ -180,6 +180,15 @@ class _UnifiedFiltersShowcaseState extends State<UnifiedFiltersShowcase> {
             paginationEnabled: true,
             enableColumnResize: false,
             enableColumnDragDrop: false,
+            // The `UnifiedFiltersBar` above already hosts the search
+            // input. Disable the table's built-in one so we don't end
+            // up with two "Buscar..." fields on screen.
+            config: const InnovareDataTableConfig<Employee>(
+              enableSearch: false,
+              enableQuickFilters: false,
+              enableAdvancedFilters: false,
+              enableColumnManagement: false,
+            ),
             emptyTitle: 'No matches',
             emptyMessage:
                 'No employee in the seed dataset satisfies every '
