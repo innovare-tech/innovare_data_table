@@ -19,6 +19,25 @@ void main() {
     );
   }
 
+  /// Wraps [child] in a MaterialApp **without** installing
+  /// [InnovareDesignTheme] in `ThemeData.extensions`. Used to exercise
+  /// the v0.1.1 Material fallback path in `InnvColumns.badge` — i.e.
+  /// what apps like `logos_saas_frontend` see when they consume the
+  /// data table without having adopted the design system.
+  Widget _wrapMaterialOnly(Widget child, {Brightness brightness = Brightness.light}) {
+    return MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: brightness,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: brightness,
+        ),
+      ),
+      home: Scaffold(body: Center(child: child)),
+    );
+  }
+
   group('InnvColumns.badge', () {
     final col = InnvColumns.badge<_Order>(
       field: 'status',
@@ -55,6 +74,87 @@ void main() {
       expect(badge.kind, InnvStatusKind.success);
       expect(badge.dense, isTrue,
           reason: 'badge columns default to dense for row density');
+    });
+  });
+
+  // v0.1.1 regression group: `InnvColumns.badge` must keep working
+  // when the host app hasn't installed `InnovareDesignTheme` in
+  // `ThemeData.extensions`. The pre-v0.1.1 implementation crashed
+  // inside `InnvBadge` because `context.innv` uses a bang operator;
+  // in release mode Flutter swallowed the crash and replaced each
+  // cell with a blank grey `ErrorWidget` (see the original report on
+  // `logos_saas_frontend/sessions_list_page.dart`).
+  group('InnvColumns.badge — Material fallback (no InnovareDesignTheme)', () {
+    final col = InnvColumns.badge<_Order>(
+      field: 'status',
+      label: 'Status',
+      labelOf: (o) => o.statusLabel,
+      kindOf: (o) => o.kind,
+      iconOf: (_) => Icons.check_circle,
+    );
+
+    testWidgets('does not crash and renders the label as a Text widget',
+        (tester) async {
+      final paid = _Order(
+        id: 1,
+        kind: InnvStatusKind.success,
+        statusLabel: 'Paid',
+      );
+      await tester.pumpWidget(_wrapMaterialOnly(col.cellBuilder!(paid)));
+      // No exceptions during build — the smoke test on its own
+      // catches the regression even before assertions.
+      expect(tester.takeException(), isNull);
+      expect(find.text('Paid'), findsOneWidget);
+    });
+
+    testWidgets('does not render an InnvBadge when the design system '
+        'is absent — proves the fallback path was taken',
+        (tester) async {
+      final item = _Order(
+        id: 1,
+        kind: InnvStatusKind.danger,
+        statusLabel: 'Failed',
+      );
+      await tester.pumpWidget(_wrapMaterialOnly(col.cellBuilder!(item)));
+      expect(find.byType(InnvBadge), findsNothing,
+          reason: 'InnvBadge depends on InnovareDesignTheme and must NOT '
+              'be instantiated when the host hasn\'t installed it');
+    });
+
+    testWidgets('renders the optional icon when iconOf is provided',
+        (tester) async {
+      final item = _Order(
+        id: 1,
+        kind: InnvStatusKind.success,
+        statusLabel: 'Paid',
+      );
+      await tester.pumpWidget(_wrapMaterialOnly(col.cellBuilder!(item)));
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    });
+
+    testWidgets('exercises every InnvStatusKind without crashing — '
+        'covers the colour-mapping switch exhaustively', (tester) async {
+      for (final kind in InnvStatusKind.values) {
+        final item = _Order(id: 1, kind: kind, statusLabel: kind.name);
+        await tester.pumpWidget(_wrapMaterialOnly(col.cellBuilder!(item)));
+        expect(tester.takeException(), isNull,
+            reason: 'kind=$kind must render without throwing');
+        expect(find.text(kind.name), findsOneWidget);
+      }
+    });
+
+    testWidgets('renders correctly in dark mode (covers the dark branch '
+        'of _tintedTriad)', (tester) async {
+      final item = _Order(
+        id: 1,
+        kind: InnvStatusKind.warning,
+        statusLabel: 'Pending',
+      );
+      await tester.pumpWidget(
+        _wrapMaterialOnly(col.cellBuilder!(item), brightness: Brightness.dark),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('Pending'), findsOneWidget);
     });
   });
 

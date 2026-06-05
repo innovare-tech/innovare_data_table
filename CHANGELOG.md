@@ -5,6 +5,64 @@ All notable changes to `innovare_data_table` are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and the package follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-06-05
+
+Patch release. Fixes a render bug in `InnvColumns.badge` that surfaced
+the moment a host without `InnovareDesignTheme` installed adopted the
+Wave 4 primitive in production (originally reported on
+`logos_saas_frontend`'s Sessions table).
+
+### Fixed
+
+- **`InnvColumns.badge` no longer crashes when the host hasn't adopted
+  `innovare_design`.** The previous implementation delegated straight
+  to `InnvBadge`, which reads `context.innv` via a bang operator
+  (`Theme.of(context).extension<InnovareDesignTheme>()!`). Apps that
+  consume the data table without installing the design system tripped
+  a `Null check operator used on a null value` inside the cell
+  builder; in release/profile mode Flutter swallowed the exception and
+  swapped each badge cell for a blank grey `ErrorWidget` placeholder.
+
+  Cells now flow through a new internal `_BadgeCell` widget that
+  inspects `InnovareDesignTheme.maybeOf(context)` and picks one of two
+  paths at build time:
+
+    - **Design system present** → delegates to `InnvBadge` (unchanged
+      behaviour; the path apps that already installed the theme see).
+    - **Design system absent** → renders a Material 3 fallback that
+      mirrors the same pill shape (tinted surface + matching border +
+      readable foreground), using `errorContainer`/`primaryContainer`
+      for `danger`/`info` and a synthesised tinted triad for
+      `success`/`warning`. Light and dark mode both correct without
+      per-app wiring.
+
+  This mirrors the same dual-path strategy `InnovareDataTable` already
+  uses for its empty/error states (`_buildEmpty` / `_buildError`), so
+  the package stays consistent: every primitive that touches
+  `innovare_design` either has a fallback or is documented as
+  requiring the theme. `InnvColumns.actions` already had a safe
+  fallback (`design?.colors.danger.content ?? theme.colorScheme.error`),
+  so no change was needed there.
+
+### Tests
+
+- Added a regression group in `test/innv_column_builders_test.dart`
+  exercising the fallback path with a `MaterialApp` that intentionally
+  omits `InnovareDesignTheme`: smoke render, absence of `InnvBadge`
+  proves the fallback was taken, optional `iconOf` rendering,
+  exhaustive coverage of every `InnvStatusKind`, and a dark-mode pump
+  covering the dark branch of `_tintedTriad`. Total: **78/78 green**
+  (was 73 in v0.1.0).
+
+### Compatibility
+
+- Pure additive change at the source level. The public signature of
+  `InnvColumns.badge` is byte-for-byte identical to v0.1.0; only the
+  internal cell renderer changed. Apps that already installed
+  `InnovareDesignTheme` see the exact same widget tree as before
+  (`InnvBadge`); apps that did not get a working Material badge
+  instead of a crash. No migration steps required — just bump the pin.
+
 ## [0.1.0] — 2026-06-05
 
 First minor bump on top of `v0.0.18`. Folds Waves 0 → 5 of the
