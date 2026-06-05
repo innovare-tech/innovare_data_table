@@ -5,6 +5,9 @@ import 'package:innovare_data_table/src/data_table_filters.dart';
 
 class MobileBottomActionBar extends StatefulWidget {
   final int totalItems;
+
+  /// 1-indexed page number (the first page is `1`). Aligned with
+  /// `DataTableRequest`/`DataTableResult` across the package.
   final int currentPage;
   final int totalPages;
   final Function(int page)? onPageChanged;
@@ -80,7 +83,7 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
         border: Border(top: BorderSide(color: widget.colors.outline)),
         boxShadow: [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.05),
+            color: widget.colors.shadow.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -107,7 +110,7 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
                     ),
                     if (widget.totalPages > 1)
                       Text(
-                        'Página ${widget.currentPage + 1} de ${widget.totalPages}',
+                        'Página ${widget.currentPage} de ${widget.totalPages}',
                         style: TextStyle(
                           fontSize: 12,
                           color: widget.colors.onSurfaceVariant,
@@ -121,13 +124,13 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
               if (widget.totalPages > 1) ...[
                 _buildPageButton(
                   icon: Icons.chevron_left,
-                  enabled: widget.currentPage > 0,
+                  enabled: widget.currentPage > 1,
                   onPressed: () => widget.onPageChanged?.call(widget.currentPage - 1),
                 ),
                 const SizedBox(width: 8),
                 _buildPageButton(
                   icon: Icons.chevron_right,
-                  enabled: widget.currentPage < widget.totalPages - 1,
+                  enabled: widget.currentPage < widget.totalPages,
                   onPressed: () => widget.onPageChanged?.call(widget.currentPage + 1),
                 ),
                 const SizedBox(width: 16),
@@ -154,14 +157,14 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
         color: enabled ? widget.colors.surface : widget.colors.surfaceVariant,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: enabled ? widget.colors.outline : widget.colors.outline.withOpacity(0.5),
+          color: enabled ? widget.colors.outline : widget.colors.outline.withValues(alpha: 0.5),
         ),
       ),
       child: IconButton(
         onPressed: enabled ? onPressed : null,
         icon: Icon(
           icon,
-          color: enabled ? widget.colors.onSurface : widget.colors.onSurfaceVariant.withOpacity(0.5),
+          color: enabled ? widget.colors.onSurface : widget.colors.onSurfaceVariant.withValues(alpha: 0.5),
           size: 20,
         ),
       ),
@@ -270,7 +273,7 @@ class _MobileBottomActionBarState extends State<MobileBottomActionBar>
                       border: Border.all(color: widget.colors.outline),
                       boxShadow: [
                         BoxShadow(
-                          color: widget.colors.shadow.withOpacity(0.1),
+                          color: widget.colors.shadow.withValues(alpha: 0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -393,7 +396,7 @@ class _FilterBottomSheetState<T> extends State<FilterBottomSheet<T>>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
-                color: widget.colors.shadow.withOpacity(0.1),
+                color: widget.colors.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),
@@ -418,7 +421,7 @@ class _FilterBottomSheetState<T> extends State<FilterBottomSheet<T>>
       height: 4,
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: widget.colors.onSurfaceVariant.withOpacity(0.3),
+        color: widget.colors.onSurfaceVariant.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -507,9 +510,9 @@ class _FilterBottomSheetState<T> extends State<FilterBottomSheet<T>>
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: widget.colors.surfaceVariant.withOpacity(0.3),
+          color: widget.colors.surfaceVariant.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: widget.colors.outline.withOpacity(0.3)),
+          border: Border.all(color: widget.colors.outline.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,9 +572,9 @@ class _FilterBottomSheetState<T> extends State<FilterBottomSheet<T>>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: widget.colors.primaryLight.withOpacity(0.1),
+        color: widget.colors.primaryLight.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: widget.colors.primary.withOpacity(0.3)),
+        border: Border.all(color: widget.colors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -765,7 +768,7 @@ class _SortBottomSheetState extends State<SortBottomSheet>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
-                color: widget.colors.shadow.withOpacity(0.1),
+                color: widget.colors.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),
@@ -790,7 +793,7 @@ class _SortBottomSheetState extends State<SortBottomSheet>
       height: 4,
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: widget.colors.onSurfaceVariant.withOpacity(0.3),
+        color: widget.colors.onSurfaceVariant.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -962,7 +965,7 @@ class _SortBottomSheetState extends State<SortBottomSheet>
             : null,
         activeColor: widget.colors.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        tileColor: isSelected ? widget.colors.primaryLight.withOpacity(0.1) : null,
+        tileColor: isSelected ? widget.colors.primaryLight.withValues(alpha: 0.1) : null,
       ),
     );
   }

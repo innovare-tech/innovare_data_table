@@ -74,9 +74,9 @@ class LocalDataTableSource<T> extends DataTableSource<T> {
       });
     }
 
-    // Aplicar paginação
+    // Aplicar paginação (request.page é 1-indexed — ver DataTableRequest).
     final totalCount = filteredData.length;
-    final startIndex = request.page * request.pageSize;
+    final startIndex = (request.page - 1) * request.pageSize;
     final endIndex = (startIndex + request.pageSize).clamp(0, totalCount);
 
     final pageData = startIndex < totalCount

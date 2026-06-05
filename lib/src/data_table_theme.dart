@@ -1,5 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 
+import 'theme/innovare_design_adapter.dart';
+
 enum DataTableDensity { compact, normal, comfortable, custom }
 
 // Sistema de cores padronizado
@@ -169,12 +171,38 @@ class InnovareDataTableTheme extends InheritedWidget {
   });
 
   static InnovareDataTableThemeData of(BuildContext context) {
+    // Precedência da resolução de cores quando o consumer não customizou:
+    //   1) InnovareDesignTheme (innovare_design) — quando o host instalou um
+    //      preset/identidade no Theme.extensions, herdamos brand, surfaces e
+    //      status semânticos (success/warning/danger) automaticamente. Sem
+    //      hex hardcoded, sem retheming por app.
+    //   2) Material ColorScheme — fallback puro Material (compatibilidade
+    //      com apps que ainda não adotaram o design system).
+    final innvScheme = resolveDataTableColorSchemeFromInnv(context);
+
     final theme = context.dependOnInheritedWidgetOfExactType<InnovareDataTableTheme>();
     if (theme != null) {
       final data = theme.data;
       // Se o consumer usou o colorScheme padrao (hardcoded light),
       // resolve automaticamente a partir do host theme.
       if (identical(data.colorScheme, const DataTableColorScheme())) {
+        // Densidade tokenizada (InnvSpacing + InnvTypography) quando o host
+        // adotou o design system e o consumer NÃO passou um `customDensity`
+        // próprio. Mantém retrocompatibilidade total: assinamos a densidade
+        // tokenizada via `customDensity` + `density: custom` apenas quando
+        // o consumer não tinha intenção própria.
+        DataTableDensity resolvedDensity = data.density;
+        DensityConfig? resolvedCustomDensity = data.customDensity;
+        if (resolvedCustomDensity == null) {
+          final tokenized = resolveDataTableDensityConfigFromInnv(
+            context,
+            data.density,
+          );
+          if (tokenized != null) {
+            resolvedCustomDensity = tokenized;
+            resolvedDensity = DataTableDensity.custom;
+          }
+        }
         return InnovareDataTableThemeData(
           headerBackgroundColor: data.headerBackgroundColor,
           headerTextStyle: data.headerTextStyle,
@@ -182,16 +210,26 @@ class InnovareDataTableTheme extends InheritedWidget {
           rowStripedColor: data.rowStripedColor,
           columnWidth: data.columnWidth,
           rowHeight: data.rowHeight,
-          density: data.density,
-          colorScheme: DataTableColorScheme.fromTheme(context),
-          customDensity: data.customDensity,
+          density: resolvedDensity,
+          colorScheme: innvScheme ?? DataTableColorScheme.fromTheme(context),
+          customDensity: resolvedCustomDensity,
         );
       }
       return data;
     }
     // Sem InnovareDataTableTheme no widget tree: resolve tudo do host.
+    // Mesmo tratamento da densidade tokenizada (sem InnovareDataTableTheme
+    // explicito, o consumer também não passou customDensity).
+    final tokenizedDensity = resolveDataTableDensityConfigFromInnv(
+      context,
+      DataTableDensity.normal,
+    );
     return InnovareDataTableThemeData(
-      colorScheme: DataTableColorScheme.fromTheme(context),
+      colorScheme: innvScheme ?? DataTableColorScheme.fromTheme(context),
+      density: tokenizedDensity != null
+          ? DataTableDensity.custom
+          : DataTableDensity.normal,
+      customDensity: tokenizedDensity,
     );
   }
 

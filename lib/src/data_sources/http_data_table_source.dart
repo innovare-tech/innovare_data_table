@@ -27,8 +27,10 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
   final bool enableCache;
   final RestConnect? customRestConnect;
 
-  // Cache opcional
-  final Map<String, DataTableResult<T>> _cache = {};
+  // Cache opcional. Guardamos (request, result) lado-a-lado para que
+  // `invalidateCache({where})` possa avaliar o predicate sobre o
+  // `DataTableRequest` original.
+  final Map<String, _CachedFetch<T>> _cache = {};
 
   HttpDataTableSource({
     required this.urlBuilder,
@@ -49,9 +51,10 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
       // Verificar cache primeiro
       if (enableCache) {
         final cacheKey = _generateCacheKey(request);
-        if (_cache.containsKey(cacheKey)) {
+        final cached = _cache[cacheKey];
+        if (cached != null) {
           print('🔍 HTTP FETCH: Cache hit');
-          return _cache[cacheKey]!;
+          return cached.result;
         }
       }
 
@@ -104,7 +107,7 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
         // Salvar no cache
         if (enableCache) {
           final cacheKey = _generateCacheKey(request);
-          _cache[cacheKey] = result;
+          _cache[cacheKey] = _CachedFetch<T>(request, result);
         }
 
         print('🔍 HTTP FETCH: Retornando resultado com ${result.data.length} itens');
@@ -128,6 +131,50 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
   void clearCache() {
     _cache.clear();
   }
+
+  /// Removes one or more entries from the in-memory response cache.
+  ///
+  /// - With no [where] predicate, behaves the same as [clearCache] —
+  ///   wipes the whole cache. Equivalent to the legacy `clearCache()`
+  ///   override, kept for ergonomics so consumers don't have to remember
+  ///   two method names.
+  /// - With a [where] predicate, evaluates it against the original
+  ///   [DataTableRequest] that produced each cached entry. Entries for
+  ///   which the predicate returns `true` are dropped; the next `fetch`
+  ///   for that request will hit the backend again.
+  ///
+  /// Typical use case: after a write operation that mutates a specific
+  /// subset of rows, invalidate just the affected pages instead of
+  /// blowing away every cached page. For example, after editing a
+  /// product on the "active" tab:
+  ///
+  /// ```dart
+  /// source.invalidateCache(
+  ///   where: (req) => req.filters.any(
+  ///     (f) => f.field == 'status' && f.value == 'active',
+  ///   ),
+  /// );
+  /// ```
+  ///
+  /// This avoids the all-or-nothing trade-off between `clearCache()`
+  /// (lose every page, refetch everything on next paginate) and the
+  /// legacy approach of leaving stale data.
+  void invalidateCache({bool Function(DataTableRequest request)? where}) {
+    if (where == null) {
+      _cache.clear();
+      return;
+    }
+    _cache.removeWhere((_, entry) => where(entry.request));
+  }
+
+  /// Read-only view of the cached requests, ordered by insertion. Useful
+  /// for diagnostics and for tests that want to assert what is currently
+  /// memoized without exposing the result payloads.
+  Iterable<DataTableRequest> get cachedRequests =>
+      _cache.values.map((e) => e.request);
+
+  /// Number of entries currently held in the in-memory cache.
+  int get cacheLength => _cache.length;
 
   String _generateCacheKey(DataTableRequest request) {
     return '${request.page}_${request.pageSize}_${request.searchTerm}_'
@@ -155,8 +202,9 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
         final uri = Uri.parse('$baseUrl$endpoint');
         final queryParams = <String, String>{};
 
-        // Paginação
-        queryParams[pageParam] = (request.page + 1).toString(); // Laravel usa base-1
+        // Paginação — `request.page` é 1-indexed (ver `DataTableRequest`),
+        // o mesmo que Laravel espera.
+        queryParams[pageParam] = request.page.toString();
         queryParams[pageSizeParam] = request.pageSize.toString();
 
         // Busca
@@ -197,13 +245,13 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
         final data = json['data'] as List;
         final items = data.map((item) => fromJson(item as Map<String, dynamic>)).toList();
 
-        // Laravel pagination meta
+        // Laravel pagination meta — `current_page` já é 1-indexed.
         final meta = json['meta'] ?? json;
 
         return DataTableResult<T>(
           data: items,
           totalCount: meta['total'] ?? data.length,
-          page: (meta['current_page'] ?? 1) - 1, // Converter para base-0
+          page: meta['current_page'] ?? 1,
           pageSize: meta['per_page'] ?? items.length,
           metadata: meta,
         );
@@ -230,8 +278,9 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
         final uri = Uri.parse('$baseUrl$endpoint');
         final queryParams = <String, String>{};
 
-        // Paginação (Django usa base-1)
-        queryParams[pageParam] = (request.page + 1).toString();
+        // Paginação — `request.page` é 1-indexed (ver `DataTableRequest`),
+        // o mesmo que Django REST Framework espera.
+        queryParams[pageParam] = request.page.toString();
         queryParams[pageSizeParam] = request.pageSize.toString();
 
         // Busca
@@ -276,7 +325,12 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
         return DataTableResult<T>(
           data: items,
           totalCount: json['count'] ?? results.length,
-          page: 0, // 🔧 CORRIGIDO: Django não retorna página na resposta
+          // Django REST Framework não retorna a página atual na resposta.
+          // Como o request foi 1-indexed, devolvemos 1 como base segura
+          // (`fetchData` já tem `_currentRequest.page` para o controller
+          // soubesse a "real" página atual, então este valor é apenas o
+          // fallback informativo).
+          page: 1,
           pageSize: items.length,
           metadata: json,
         );
@@ -344,14 +398,15 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
       responseParser: customResponseParser != null
           ? (json) => customResponseParser(json, fromJson)
           : (json) {
-        // Parser genérico - adapte conforme sua API
+        // Parser genérico - adapte conforme sua API.
+        // `page` é 1-indexed (ver `DataTableRequest`); default 1.
         final data = json['data'] ?? json['items'] ?? json;
         if (data is List) {
           final items = data.map((item) => fromJson(item as Map<String, dynamic>)).toList();
           return DataTableResult<T>(
             data: items,
             totalCount: json['total'] ?? json['count'] ?? items.length,
-            page: json['page'] ?? 0,
+            page: json['page'] ?? 1,
             pageSize: json['pageSize'] ?? json['limit'] ?? items.length,
             metadata: json,
           );
@@ -361,6 +416,16 @@ class HttpDataTableSource<T> extends DataTableSource<T> {
       errorHandler: errorHandler,
     );
   }
+}
+
+/// Cache entry: pairs the originating [DataTableRequest] with the
+/// [DataTableResult] so [HttpDataTableSource.invalidateCache] can evaluate
+/// a predicate against the request that produced each result.
+class _CachedFetch<T> {
+  final DataTableRequest request;
+  final DataTableResult<T> result;
+
+  const _CachedFetch(this.request, this.result);
 }
 
 // CLASSE DE EXCEÇÃO CUSTOMIZADA
@@ -432,7 +497,8 @@ class ApiHelpers {
     return DataTableResult<T>(
       data: items,
       totalCount: json[totalKey] ?? data.length,
-      page: json[pageKey] ?? 0,
+      // 1-indexed — see DataTableRequest documentation.
+      page: json[pageKey] ?? 1,
       pageSize: json[pageSizeKey] ?? items.length,
       metadata: json,
     );

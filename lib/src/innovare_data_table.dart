@@ -25,8 +25,18 @@ import 'package:innovare_data_table/src/columns/column_management.dart';
 import 'package:innovare_data_table/src/mobile/touch_gestures.dart';
 import 'package:innovare_data_table/src/mobile/pull_to_refresh.dart';
 import 'package:innovare_data_table/src/loading/smart_loading.dart';
+import 'package:innovare_design/innovare_design.dart';
 
-class SkeletonLoader extends StatefulWidget {
+/// Loading placeholder used by the table while data is being fetched.
+///
+/// Delegates to [InnvSkeleton] when the host installed an
+/// [InnovareDesignTheme] in the widget tree — so the shimmer picks up the
+/// brand surfaces and reads correctly in light/dark/glassmorphism presets.
+///
+/// When no design theme is present, falls back to a self-contained shimmer
+/// that uses the Material [ColorScheme] (full backward compatibility with
+/// pure-Material consumers).
+class SkeletonLoader extends StatelessWidget {
   final double width;
   final double height;
   final BorderRadius? borderRadius;
@@ -39,10 +49,43 @@ class SkeletonLoader extends StatefulWidget {
   });
 
   @override
-  State<SkeletonLoader> createState() => _SkeletonLoaderState();
+  Widget build(BuildContext context) {
+    final innv = InnovareDesignTheme.maybeOf(context);
+    if (innv != null) {
+      return InnvSkeleton(
+        width: width,
+        height: height,
+        radius: borderRadius,
+      );
+    }
+    return _MaterialSkeletonShimmer(
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+    );
+  }
 }
 
-class _SkeletonLoaderState extends State<SkeletonLoader>
+/// Material-only shimmer used as the fallback when no [InnovareDesignTheme]
+/// is installed. Mirrors the legacy implementation of `SkeletonLoader`
+/// verbatim so visual output is unchanged for pre-design-system consumers.
+class _MaterialSkeletonShimmer extends StatefulWidget {
+  final double width;
+  final double height;
+  final BorderRadius? borderRadius;
+
+  const _MaterialSkeletonShimmer({
+    required this.width,
+    required this.height,
+    this.borderRadius,
+  });
+
+  @override
+  State<_MaterialSkeletonShimmer> createState() =>
+      _MaterialSkeletonShimmerState();
+}
+
+class _MaterialSkeletonShimmerState extends State<_MaterialSkeletonShimmer>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -168,14 +211,80 @@ class InnovareDataTable<T> extends StatefulWidget {
   final List<T> rows;
   final int pageSize;
   final bool paginationEnabled;
+  /// Legacy single-sort callback. Fires with the **primary** sort
+  /// (`_activeSorts.first`) after every sort change — including when
+  /// the user is building up a multi-column stack via Shift+click.
+  /// Apps that only know about single-column sort keep working: this
+  /// callback emits the same `(field, ascending)` pair as before.
   final void Function(String field, bool ascending)? onSort;
+
+  /// Multi-column sort callback. Fires after every sort change with
+  /// the **full stack** in priority order. The first entry is the
+  /// primary sort; subsequent entries act as tie-breakers. Use this
+  /// when you want to mirror the table's sort state somewhere else
+  /// (e.g. a debug panel, a URL query string, or a server-side
+  /// API that accepts `?sort=name:asc,role:desc`).
+  ///
+  /// `onSort` still fires alongside `onSortsChanged` for backwards
+  /// compatibility — you can subscribe to either or both.
+  final void Function(List<DataTableSort> sorts)? onSortsChanged;
+
+  /// Empty-state copy used when the table renders zero visible rows.
+  /// When the host installs `innovare_design`, these strings are
+  /// piped into an [InnvEmptyState] (medallion icon + title + message
+  /// + optional action). When the design system is absent, the
+  /// fallback Material layout uses the same strings so apps keep
+  /// looking consistent either way.
+  final String emptyTitle;
+  final String? emptyMessage;
+  final IconData emptyIcon;
+  final Widget? emptyAction;
+
+  /// Optional error message. When non-null and the data source has
+  /// not produced a result yet, the body renders an [InnvErrorState]
+  /// (or a Material fallback) with [onErrorRetry] as the retry action.
+  /// Apps that drive errors via their own state container can simply
+  /// pass these through.
+  final String? errorMessage;
+  final VoidCallback? onErrorRetry;
   final Widget Function(T item)? onRowTap;
   final bool isLoading;
   final bool enableSelection;
   final void Function(List<T> selectedItems)? onSelectionChanged;
   final String? title;
   final DataTableDensity density;
+  /// Per-column header filters.
+  ///
+  /// **Deprecated since v0.0.19**: moved into [InnovareDataTableConfig]
+  /// to converge with `quickFiltersConfigs` / `advancedFiltersConfigs`
+  /// / `unifiedFiltersConfig`. The widget continues to honour this
+  /// top-level prop in v0.0.19 — it folds onto the same code path as
+  /// the canonical one — but it **will be removed in v0.2.0**.
+  ///
+  /// Migration: pass the same list via
+  /// `InnovareDataTableConfig(...)` (or a future
+  /// `UnifiedFiltersConfig.columnFilters`). See
+  /// `docs/MIGRATING_FILTERS.md` for the full guide.
+  @Deprecated(
+    'Move to InnovareDataTableConfig — removed in v0.2.0. '
+    'See docs/MIGRATING_FILTERS.md',
+  )
   final List<ColumnFilterOption<T>> columnFilters;
+
+  /// Top-level shortcut for advanced filters.
+  ///
+  /// **Deprecated since v0.0.19**: duplicates
+  /// `InnovareDataTableConfig.advancedFiltersConfigs` /
+  /// `unifiedFiltersConfig.advancedFiltersConfigs`. The widget honours
+  /// this list in v0.0.19 (folds onto the same path), but it **will be
+  /// removed in v0.2.0**.
+  ///
+  /// Migration: pass the same list via `InnovareDataTableConfig`. See
+  /// `docs/MIGRATING_FILTERS.md`.
+  @Deprecated(
+    'Move to InnovareDataTableConfig.advancedFiltersConfigs — removed in '
+    'v0.2.0. See docs/MIGRATING_FILTERS.md',
+  )
   final List<AdvancedFilterConfig<T>> advancedFilters;
   final bool enableResponsive;
   final List<String> priorityColumns;
@@ -201,6 +310,13 @@ class InnovareDataTable<T> extends StatefulWidget {
     this.pageSize = 10,
     this.paginationEnabled = true,
     this.onSort,
+    this.onSortsChanged,
+    this.emptyTitle = 'Nenhum dado encontrado',
+    this.emptyMessage = 'Tente ajustar os filtros ou adicionar novos dados',
+    this.emptyIcon = Icons.inbox_rounded,
+    this.emptyAction,
+    this.errorMessage,
+    this.onErrorRetry,
     this.onRowTap,
     this.isLoading = false,
     this.enableSelection = false,
@@ -282,7 +398,19 @@ class InnovareDataTable<T> extends StatefulWidget {
 
 class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     with TickerProviderStateMixin {
-  int _currentPage = 0;
+  // `_currentPage` segue a convenção 1-indexed do `DataTableRequest`.
+  // A primeira página é 1, nunca 0.
+  int _currentPage = 1;
+
+  /// Sort stack em ordem de prioridade (primeiro = primário). Reflete a
+  /// mesma estrutura usada por `DataTableController.sortMulti`. A UI
+  /// renderiza um badge numérico 1/2/3 ao lado do ícone de direção quando
+  /// o stack tem ≥ 2 colunas (ver `_SortPriorityBadge` nos header cells).
+  ///
+  /// `_sortedField`/`_isAscending` são mantidos em sync com `_activeSorts
+  /// .first` para preservar a API legacy de `widget.onSort(field,
+  /// ascending)` e o caminho de ordenação local em `_applySorting`.
+  List<DataTableSort> _activeSorts = [];
   String? _sortedField;
   bool _isAscending = true;
   final ScrollController _scrollController = ScrollController();
@@ -299,6 +427,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   late AnimationController _pageTransitionController;
 
   // Animações
+  // Reserved for the upcoming sort icon rotation tween. Kept in place so
+  // the controller setup in `initState` stays a single block.
+  // ignore: unused_field
   late Animation<double> _sortRotation;
   late Animation<double> _selectionScale;
   late Animation<Offset> _pageSlideAnimation;
@@ -473,10 +604,13 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
 
   int _getEffectiveCurrentPage() {
     if (_useDataSource && _dataController != null) {
-      // Retorna a página atual do controller (que gerencia a página correta)
-      return _dataController!.currentResult?.page ?? 0;
+      // Página atual do controller (1-indexed). Antes do primeiro fetch,
+      // o `currentResult` é null — caímos para a página do request, que
+      // já default em 1.
+      return _dataController!.currentResult?.page ??
+          _dataController!.currentRequest.page;
     }
-    // Para dados locais, usa a página local
+    // Para dados locais, usa a página local (1-indexed).
     return _currentPage;
   }
 
@@ -498,16 +632,16 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     if (_useDataSource && _dataController != null) {
       return _dataController!.currentResult?.hasNextPage ?? false;
     }
-    // Para dados locais
-    return _currentPage < _getEffectiveTotalPages() - 1;
+    // Para dados locais (1-indexed): a página atual ainda não é a última.
+    return _currentPage < _getEffectiveTotalPages();
   }
 
   bool _getEffectiveHasPreviousPage() {
     if (_useDataSource && _dataController != null) {
       return _dataController!.currentResult?.hasPreviousPage ?? false;
     }
-    // Para dados locais
-    return _currentPage > 0;
+    // Para dados locais (1-indexed): a primeira página é 1.
+    return _currentPage > 1;
   }
 
   // Métodos de filtragem integrados
@@ -551,8 +685,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       data = _applyAdvancedFilters(data);
     }
 
-    // Aplicar ordenação (se não estiver usando datasource)
-    if (widget.dataSource == null && _sortedField != null) {
+    // Aplicar ordenação (se não estiver usando datasource). Honra tanto
+    // o stack multi-sort (Shift+click) quanto o caminho legacy single-sort.
+    if (widget.dataSource == null &&
+        (_activeSorts.isNotEmpty || _sortedField != null)) {
       data = _applySorting(data);
     }
 
@@ -702,24 +838,42 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   List<T> _applySorting(List<T> data) {
-    if (_sortedField == null) return data;
+    // Quando o usuário ordena por múltiplas colunas (Shift+click), itera o
+    // `_activeSorts` na ordem de prioridade — o primeiro sort empata, o
+    // segundo desempata, e assim por diante. Fallback para o caminho legacy
+    // single-sort (`_sortedField`/`_isAscending`) quando o stack está
+    // vazio mas o caminho legacy foi disparado externamente (ex.: testes).
+    if (_activeSorts.isEmpty && _sortedField == null) return data;
 
-    final column = widget.columns.firstWhere(
-      (col) => col.field == _sortedField,
-    );
+    final sortsToApply = _activeSorts.isNotEmpty
+        ? _activeSorts
+        : <DataTableSort>[
+            DataTableSort(field: _sortedField!, ascending: _isAscending),
+          ];
 
+    // Copy defensively — `data` may come from an unmodifiable source
+    // (e.g. `const` rows passed by the consumer or a filtered slice
+    // backed by a const list).
+    data = List<T>.of(data);
     data.sort((a, b) {
-      final valueA = column.valueGetter(a);
-      final valueB = column.valueGetter(b);
+      for (final sort in sortsToApply) {
+        final column = widget.columns.firstWhere(
+          (col) => col.field == sort.field,
+        );
+        final valueA = column.valueGetter(a);
+        final valueB = column.valueGetter(b);
 
-      int comparison = 0;
-      if (valueA is Comparable && valueB is Comparable) {
-        comparison = valueA.compareTo(valueB);
-      } else {
-        comparison = valueA.toString().compareTo(valueB.toString());
+        int comparison = 0;
+        if (valueA is Comparable && valueB is Comparable) {
+          comparison = valueA.compareTo(valueB);
+        } else {
+          comparison = valueA.toString().compareTo(valueB.toString());
+        }
+        if (comparison != 0) {
+          return sort.ascending ? comparison : -comparison;
+        }
       }
-
-      return _isAscending ? comparison : -comparison;
+      return 0;
     });
 
     return data;
@@ -748,7 +902,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withOpacity(0.04),
+            color: colors.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -881,7 +1035,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           ),
         );
       },
-      child: visibleRows.isEmpty
+      child: widget.errorMessage != null
+          ? _buildErrorTable(theme, colors, density, visibleColumns)
+          : visibleRows.isEmpty
           ? _buildEmptyTable(theme, colors, density, visibleColumns)
           : (ResponsiveTableManager.isMobile(context) &&
                   widget.mobileConfig != null
@@ -981,10 +1137,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   decoration: BoxDecoration(
                     color: index.isEven
                         ? colors.surface
-                        : colors.surfaceVariant.withOpacity(0.3),
+                        : colors.surfaceVariant.withValues(alpha: 0.3),
                     border: Border(
                       bottom: BorderSide(
-                        color: colors.outline.withOpacity(0.3),
+                        color: colors.outline.withValues(alpha: 0.3),
                         width: 0.5,
                       ),
                     ),
@@ -1565,7 +1721,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     if (_useDataSource && _dataController != null) {
       _dataController!.previousPage();
     } else {
-      if (_currentPage > 0) {
+      if (_currentPage > 1) {
         _changePage(_currentPage - 1);
       }
     }
@@ -1575,7 +1731,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     if (_useDataSource && _dataController != null) {
       _dataController!.nextPage();
     } else {
-      if (_currentPage < _getEffectiveTotalPages() - 1) {
+      if (_currentPage < _getEffectiveTotalPages()) {
         _changePage(_currentPage + 1);
       }
     }
@@ -1591,7 +1747,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     final filtered = _getFilteredData();
     if (!widget.paginationEnabled) return filtered;
 
-    final start = _currentPage * widget.pageSize;
+    // `_currentPage` é 1-indexed — ver `DataTableRequest`.
+    final start = (_currentPage - 1) * widget.pageSize;
     final end = (start + widget.pageSize).clamp(0, filtered.length);
     return filtered.sublist(start, end);
   }
@@ -1697,6 +1854,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     });
   }
 
+  // Legacy skeleton variant. The active loading path uses
+  // [_buildSkeletonTableContent] inside `_buildTableWithLoading`.
+  // ignore: unused_element
   Widget _buildSkeletonLoading(
     DataTableColorScheme colors,
     DensityConfig density,
@@ -1814,10 +1974,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   decoration: BoxDecoration(
                     color: index.isEven
                         ? colors.surface
-                        : colors.surfaceVariant.withOpacity(0.3),
+                        : colors.surfaceVariant.withValues(alpha: 0.3),
                     border: Border(
                       bottom: BorderSide(
-                        color: colors.outline.withOpacity(0.3),
+                        color: colors.outline.withValues(alpha: 0.3),
                         width: 0.5,
                       ),
                     ),
@@ -1969,6 +2129,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     );
   }
 
+  // Legacy table builder. The active path is `_buildContent` ->
+  // `_buildTableWithLoading`. Retained for tests that bypass the loading
+  // wrapper directly.
+  // ignore: unused_element
   Widget _buildTable(
     InnovareDataTableThemeData theme,
     DataTableColorScheme colors,
@@ -1998,7 +2162,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             ),
           );
         },
-        child: visibleRows.isEmpty
+        child: widget.errorMessage != null
+            ? _buildErrorTable(theme, colors, density, visibleColumns)
+            : visibleRows.isEmpty
             ? _buildEmptyTable(theme, colors, density, visibleColumns)
             : (isMobile && widget.mobileConfig != null
                 ? _buildMobileCards(visibleRows, colors)
@@ -2032,6 +2198,36 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               visibleColumns,
             ),
             Expanded(child: _buildEmpty(colors)),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Same shape as [_buildEmptyTable] but renders the error variant
+  /// in the body. Keeping the column header visible (instead of
+  /// replacing the entire pane) preserves layout continuity — the
+  /// user sees what they were looking at, plus an explanation +
+  /// retry CTA underneath.
+  Widget _buildErrorTable(
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
+    return AnimatedBuilder(
+      animation: _resizeController,
+      builder: (context, child) {
+        return Column(
+          children: [
+            _buildFixedRegularHeader(
+              theme,
+              colors,
+              density,
+              <T>[],
+              visibleColumns,
+            ),
+            Expanded(child: _buildError(colors)),
           ],
         );
       },
@@ -2138,7 +2334,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       decoration: BoxDecoration(
         color: colors.surfaceVariant,
         border: Border(
-          right: BorderSide(color: colors.outline.withOpacity(0.3)),
+          right: BorderSide(color: colors.outline.withValues(alpha: 0.3)),
         ),
       ),
       child: Center(
@@ -2161,7 +2357,7 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       width: 60,
       decoration: BoxDecoration(
         border: Border(
-          right: BorderSide(color: colors.outline.withOpacity(0.3)),
+          right: BorderSide(color: colors.outline.withValues(alpha: 0.3)),
         ),
       ),
       child: ListView.builder(
@@ -2178,10 +2374,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                   ? colors.primaryLight
                   : index.isEven
                       ? colors.surface
-                      : colors.surfaceVariant.withOpacity(0.3),
+                      : colors.surfaceVariant.withValues(alpha: 0.3),
               border: Border(
                 bottom: BorderSide(
-                  color: colors.outline.withOpacity(0.3),
+                  color: colors.outline.withValues(alpha: 0.3),
                   width: 0.5,
                 ),
               ),
@@ -2334,13 +2530,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         enableResize: widget.enableColumnResize,
         currentSortField: _sortedField,
         isAscending: _isAscending,
-        onSort: (field, ascending) {
-          setState(() {
-            _sortedField = field;
-            _isAscending = ascending;
-            widget.onSort?.call(field, ascending);
-          });
-        },
+        activeSorts: _activeSorts,
+        onSortRequested: _handleSortRequested,
       );
     } else if (widget.enableColumnResize) {
       return PureResizableHeaderCell<T>(
@@ -2357,13 +2548,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         enableResize: widget.enableColumnResize,
         currentSortField: _sortedField,
         isAscending: _isAscending,
-        onSort: (field, ascending) {
-          setState(() {
-            _sortedField = field;
-            _isAscending = ascending;
-            widget.onSort?.call(field, ascending);
-          });
-        },
+        activeSorts: _activeSorts,
+        onSortRequested: _handleSortRequested,
       );
     } else {
       return _buildStaticHeaderCellFixed(column, currentWidth, colors, density);
@@ -2392,10 +2578,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               ? colors.primaryLight
               : index.isEven
                   ? colors.surface
-                  : colors.surfaceVariant.withOpacity(0.3),
+                  : colors.surfaceVariant.withValues(alpha: 0.3),
           border: Border(
             bottom: BorderSide(
-              color: colors.outline.withOpacity(0.3),
+              color: colors.outline.withValues(alpha: 0.3),
               width: 0.5,
             ),
           ),
@@ -2456,15 +2642,32 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               child: GestureDetector(
                 onTap: column.sortable
                     ? () {
-                        setState(() {
-                          if (_sortedField == column.field) {
-                            _isAscending = !_isAscending;
-                          } else {
-                            _sortedField = column.field;
-                            _isAscending = true;
+                        // Direção atual a partir do stack multi-sort (ou
+                        // legacy single-sort como fallback).
+                        bool? currentAscending;
+                        for (final s in _activeSorts) {
+                          if (s.field == column.field) {
+                            currentAscending = s.ascending;
+                            break;
                           }
-                          widget.onSort?.call(_sortedField!, _isAscending);
-                        });
+                        }
+                        currentAscending ??= _sortedField == column.field
+                            ? _isAscending
+                            : null;
+                        final newAscending = currentAscending == null
+                            ? true
+                            : !currentAscending;
+                        final additive = HardwareKeyboard
+                            .instance.logicalKeysPressed
+                            .any(
+                          (k) => k == LogicalKeyboardKey.shiftLeft ||
+                              k == LogicalKeyboardKey.shiftRight,
+                        );
+                        _handleSortRequested(
+                          field: column.field,
+                          ascending: newAscending,
+                          additive: additive,
+                        );
                       }
                     : null,
                 child: MouseRegion(
@@ -2572,13 +2775,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       onColumnReorder: _reorderColumns,
       currentSortField: _sortedField,
       isAscending: _isAscending,
-      onSort: (field, ascending) {
-        setState(() {
-          _sortedField = field;
-          _isAscending = ascending;
-          widget.onSort?.call(field, ascending);
-        });
-      },
+      activeSorts: _activeSorts,
+      onSortRequested: _handleSortRequested,
       columnFilters: widget.columnFilters,
       columnFiltersState: _columnFilters,
       onColumnFilterChanged: _onColumnFilterChanged,
@@ -2722,14 +2920,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                     borderRadius: BorderRadius.circular(8),
                     color: hasPreviousPage
                         ? Colors.transparent
-                        : colors.surfaceVariant.withOpacity(0.5),
+                        : colors.surfaceVariant.withValues(alpha: 0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_left_rounded,
                       color: hasPreviousPage
                           ? colors.onSurfaceVariant
-                          : colors.onSurfaceVariant.withOpacity(0.5),
+                          : colors.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     onPressed: hasPreviousPage ? _previousPage : null,
                   ),
@@ -2745,14 +2943,14 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
                     borderRadius: BorderRadius.circular(8),
                     color: hasNextPage
                         ? Colors.transparent
-                        : colors.surfaceVariant.withOpacity(0.5),
+                        : colors.surfaceVariant.withValues(alpha: 0.5),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.chevron_right_rounded,
                       color: hasNextPage
                           ? colors.onSurfaceVariant
-                          : colors.onSurfaceVariant.withOpacity(0.5),
+                          : colors.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     onPressed: hasNextPage ? _nextPage : null,
                   ),
@@ -2765,6 +2963,61 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     );
   }
 
+  /// Sort intent recebido de um header cell. Aplica a regra de multi-sort:
+  ///
+  /// - **`additive: true`** (Shift+click): se a coluna já está no
+  ///   `_activeSorts`, alterna a direção (sem mover a posição na pilha).
+  ///   Senão, anexa ao final do stack.
+  /// - **`additive: false`** (clique simples): substitui o stack inteiro
+  ///   por `[DataTableSort(field, ascending)]`.
+  ///
+  /// Sincroniza `_sortedField`/`_isAscending` com o primeiro sort do stack
+  /// (preserva compat com `widget.onSort(field, ascending)` e com o caminho
+  /// local de `_applySorting`). Para apps que adotam multi-sort completo,
+  /// chama também `widget.onSortsChanged?(_activeSorts)` quando a prop
+  /// está presente — e propaga via `DataTableController.sortMulti` no
+  /// modo server-side.
+  void _handleSortRequested({
+    required String field,
+    required bool ascending,
+    required bool additive,
+  }) {
+    setState(() {
+      final next = List<DataTableSort>.of(_activeSorts);
+      final existingIdx = next.indexWhere((s) => s.field == field);
+
+      if (additive) {
+        if (existingIdx >= 0) {
+          // Alterna direção mantendo a posição no stack.
+          next[existingIdx] =
+              DataTableSort(field: field, ascending: ascending);
+        } else {
+          next.add(DataTableSort(field: field, ascending: ascending));
+        }
+      } else {
+        // Reset — single sort.
+        next
+          ..clear()
+          ..add(DataTableSort(field: field, ascending: ascending));
+      }
+
+      _activeSorts = next;
+      _sortedField = next.first.field;
+      _isAscending = next.first.ascending;
+    });
+
+    // Propaga ao backend / consumidor.
+    if (_useDataSource && _dataController != null) {
+      _dataController!.sortMulti(_activeSorts);
+    }
+    widget.onSort?.call(_sortedField!, _isAscending);
+    widget.onSortsChanged?.call(List<DataTableSort>.unmodifiable(_activeSorts));
+  }
+
+  // Legacy single-sort handler. The widget's sort path now flows through
+  // [_handleSortRequested] (Wave 3.4). Kept around in case external
+  // callers wired against this name still exist in trunk apps.
+  // ignore: unused_element
   void _handleSort(String field, bool ascending) {
     if (_useDataSource && _dataController != null) {
       // Para DataSource, usa o método do controller
@@ -2779,6 +3032,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     }
   }
 
+  // Legacy search handler. Replaced inline by the controller calls
+  // inside `_buildSearchField`. Kept for parity with `_handleSort`.
+  // ignore: unused_element
   void _handleSearch(String searchTerm) {
     if (_useDataSource && _dataController != null) {
       // Para DataSource, usa o método do controller
@@ -2801,6 +3057,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
     }
   }
 
+  // Legacy filter handler. Replaced by the unified filters controller.
+  // ignore: unused_element
   void _handleFilter(String field, dynamic value) {
     if (_useDataSource && _dataController != null) {
       // Para DataSource, usa o método do controller
@@ -2879,75 +3137,123 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildEmpty(DataTableColorScheme colors) {
+    // When `innovare_design` is installed in the host, prefer the
+    // tokenized `InnvEmptyState`: medallion icon + title + message +
+    // optional action, with the design system's reveal motion. When
+    // it isn't installed, fall back to a Material layout that mirrors
+    // the same shape (icon → title → message → action) using the
+    // table's color scheme. The two paths share the props on
+    // `InnovareDataTable` (`emptyTitle`, `emptyMessage`, etc.) so apps
+    // only describe the empty state once.
+    final hasDesign = InnovareDesignTheme.maybeOf(context) != null;
+    if (hasDesign) {
+      return InnvEmptyState(
+        icon: widget.emptyIcon,
+        title: widget.emptyTitle,
+        message: widget.emptyMessage,
+        action: widget.emptyAction,
+      );
+    }
+
     return Center(
       child: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 500),
+        child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: Opacity(
-                      opacity: value,
-                      child: Icon(
-                        Icons.inbox_rounded,
-                        size: 64,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  );
-                },
+              Icon(
+                widget.emptyIcon,
+                size: 64,
+                color: colors.onSurfaceVariant,
               ),
               const SizedBox(height: 16),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                builder: (context, value, child) {
-                  return Transform.translate(
-                    offset: Offset(0, 20 * (1 - value)),
-                    child: Opacity(
-                      opacity: value,
-                      child: Text(
-                        'Nenhum dado encontrado',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: colors.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                },
+              Text(
+                widget.emptyTitle,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: colors.onSurface,
+                ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 1000),
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                builder: (context, value, child) {
-                  return Transform.translate(
-                    offset: Offset(0, 20 * (1 - value)),
-                    child: Opacity(
-                      opacity: value,
-                      child: Text(
-                        'Tente ajustar os filtros ou adicionar novos dados',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colors.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                },
+              if (widget.emptyMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.emptyMessage!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (widget.emptyAction != null) ...[
+                const SizedBox(height: 24),
+                widget.emptyAction!,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Renders an error state (medallion + title + message + retry
+  /// button) using [InnvErrorState] when the design system is
+  /// installed, otherwise a Material fallback. Invoked only when the
+  /// caller passes a non-null `errorMessage`.
+  Widget _buildError(DataTableColorScheme colors) {
+    final hasDesign = InnovareDesignTheme.maybeOf(context) != null;
+    if (hasDesign) {
+      return InnvErrorState(
+        message: widget.errorMessage,
+        onRetry: widget.onErrorRetry,
+      );
+    }
+    return Center(
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: colors.error,
               ),
+              const SizedBox(height: 16),
+              Text(
+                'Algo deu errado',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: colors.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (widget.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.errorMessage!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (widget.onErrorRetry != null) ...[
+                const SizedBox(height: 24),
+                FilledButton.tonalIcon(
+                  onPressed: widget.onErrorRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Tentar de novo'),
+                ),
+              ],
             ],
           ),
         ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:innovare_data_table/src/data_table_theme.dart';
 import 'package:innovare_data_table/src/search/search_config.dart';
+import 'package:innovare_design/innovare_design.dart';
 
 enum SearchSuggestionType { suggestion, history, popular, filter }
 
@@ -38,7 +39,6 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
   Timer? _debounceTimer;
   List<SearchSuggestion> _suggestions = [];
   List<String> _searchHistory = [];
-  bool _showSuggestions = false;
   OverlayEntry? _overlayEntry;
 
   @override
@@ -179,8 +179,7 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
           value = item.toString();
         }
 
-        if (value != null &&
-            value.toLowerCase().contains(query) &&
+        if (value.toLowerCase().contains(query) &&
             !uniqueValues.contains(value) &&
             value.toLowerCase() != query) {
 
@@ -265,7 +264,7 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
       decoration: BoxDecoration(
         color: widget.colors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: widget.colors.outline.withOpacity(0.2)),
+        border: Border.all(color: widget.colors.outline.withValues(alpha: 0.2)),
       ),
       child: ListView.builder(
         shrinkWrap: true,
@@ -351,6 +350,31 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
 
   @override
   Widget build(BuildContext context) {
+    // When `innovare_design` is installed, render an `InnvTextField`:
+    // it brings the haptic+shake error reveal, a focus-reactive prefix
+    // icon and tokens that already match the host preset. Apps without
+    // the design system fall back to the historical Material `TextField`
+    // so the table keeps working in isolation.
+    final hasDesign = InnovareDesignTheme.maybeOf(context) != null;
+    if (hasDesign) {
+      final hasText = _controller.text.trim().isNotEmpty;
+      return InnvTextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        hint: widget.config.placeholder,
+        prefixIcon: Icons.search_rounded,
+        suffixIcon: hasText ? Icons.clear_rounded : null,
+        onSuffixTap: hasText
+            ? () {
+                _controller.clear();
+                widget.onChanged('');
+                widget.onClear?.call();
+                _generateSuggestions();
+              }
+            : null,
+      );
+    }
+
     return TextField(
       controller: _controller,
       focusNode: _focusNode,
@@ -378,21 +402,22 @@ class _EnhancedSearchFieldState<T> extends State<EnhancedSearchField<T>>
           borderRadius: BorderRadius.circular(22),
           borderSide: BorderSide(color: widget.colors.primary, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        suffixIcon: _controller.text.trim().isNotEmpty // ✅ Usar trim()
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        suffixIcon: _controller.text.trim().isNotEmpty
             ? IconButton(
-          icon: Icon(
-            Icons.clear_rounded,
-            color: widget.colors.onSurfaceVariant,
-            size: 18,
-          ),
-          onPressed: () {
-            _controller.clear();
-            widget.onChanged(''); // ✅ Chamar onChanged com string vazia
-            widget.onClear?.call();
-            _generateSuggestions();
-          },
-        )
+                icon: Icon(
+                  Icons.clear_rounded,
+                  color: widget.colors.onSurfaceVariant,
+                  size: 18,
+                ),
+                onPressed: () {
+                  _controller.clear();
+                  widget.onChanged('');
+                  widget.onClear?.call();
+                  _generateSuggestions();
+                },
+              )
             : null,
       ),
       style: TextStyle(

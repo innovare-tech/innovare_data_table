@@ -144,11 +144,11 @@ class _DraggableHeaderCellState<T> extends State<DraggableHeaderCell<T>> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: isHovering
-            ? widget.colors.primaryLight.withOpacity(0.3)
+            ? widget.colors.primaryLight.withValues(alpha: 0.3)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         border: isHovering
-            ? Border.all(color: widget.colors.primary.withOpacity(0.5), width: 2)
+            ? Border.all(color: widget.colors.primary.withValues(alpha: 0.5), width: 2)
             : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -174,7 +174,7 @@ class _DraggableHeaderCellState<T> extends State<DraggableHeaderCell<T>> {
               child: Icon(
                 Icons.drag_indicator,
                 size: 16,
-                color: widget.colors.onSurfaceVariant.withOpacity(0.7),
+                color: widget.colors.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -280,7 +280,7 @@ class _DraggableHeaderCellState<T> extends State<DraggableHeaderCell<T>> {
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: widget.colors.primary.withOpacity(0.3),
+              color: widget.colors.primary.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -325,7 +325,7 @@ class _DraggableHeaderCellState<T> extends State<DraggableHeaderCell<T>> {
       decoration: BoxDecoration(
         color: widget.colors.surface,
         border: Border.all(
-          color: widget.colors.primary.withOpacity(0.5),
+          color: widget.colors.primary.withValues(alpha: 0.5),
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
@@ -333,7 +333,7 @@ class _DraggableHeaderCellState<T> extends State<DraggableHeaderCell<T>> {
       child: Center(
         child: Icon(
           Icons.drag_handle,
-          color: widget.colors.primary.withOpacity(0.7),
+          color: widget.colors.primary.withValues(alpha: 0.7),
           size: 20,
         ),
       ),

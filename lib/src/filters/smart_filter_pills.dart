@@ -128,7 +128,7 @@ class _SmartFilterPillsState<T> extends State<SmartFilterPills<T>>
         color: widget.colors.surface,
         border: Border(
           bottom: BorderSide(
-            color: widget.colors.outline.withOpacity(0.08),
+            color: widget.colors.outline.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -164,10 +164,10 @@ class _SmartFilterPillsState<T> extends State<SmartFilterPills<T>>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: widget.colors.primary.withOpacity(0.08),
+        color: widget.colors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: widget.colors.primary.withOpacity(0.2),
+          color: widget.colors.primary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -256,13 +256,13 @@ class _SmartFilterPillsState<T> extends State<SmartFilterPills<T>>
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: isSearchFilter
-                        ? widget.colors.primary.withOpacity(0.1)
-                        : pillColor.withOpacity(0.08),
+                        ? widget.colors.primary.withValues(alpha: 0.1)
+                        : pillColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isSearchFilter
-                          ? widget.colors.primary.withOpacity(0.3)
-                          : pillColor.withOpacity(0.25),
+                          ? widget.colors.primary.withValues(alpha: 0.3)
+                          : pillColor.withValues(alpha: 0.25),
                       width: 1,
                     ),
                   ),
@@ -298,7 +298,7 @@ class _SmartFilterPillsState<T> extends State<SmartFilterPills<T>>
                       Icon(
                         Icons.close_rounded,
                         size: 12,
-                        color: (isSearchFilter ? widget.colors.primary : pillColor).withOpacity(0.7),
+                        color: (isSearchFilter ? widget.colors.primary : pillColor).withValues(alpha: 0.7),
                       ),
                     ],
                   ),
@@ -322,10 +322,10 @@ class _SmartFilterPillsState<T> extends State<SmartFilterPills<T>>
           height: 28,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: widget.colors.surfaceVariant.withOpacity(0.6),
+            color: widget.colors.surfaceVariant.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: widget.colors.outline.withOpacity(0.3),
+              color: widget.colors.outline.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -364,10 +364,10 @@ class _SmartFilterPillsState<T> extends State<SmartFilterPills<T>>
           height: 28,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: widget.colors.surfaceVariant.withOpacity(0.6),
+            color: widget.colors.surfaceVariant.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: widget.colors.outline.withOpacity(0.3),
+              color: widget.colors.outline.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -392,10 +392,10 @@ class _SmartFilterPillsState<T> extends State<SmartFilterPills<T>>
           height: 28,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: widget.colors.error.withOpacity(0.08),
+            color: widget.colors.error.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: widget.colors.error.withOpacity(0.2),
+              color: widget.colors.error.withValues(alpha: 0.2),
               width: 1,
             ),
           ),

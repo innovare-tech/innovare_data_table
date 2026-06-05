@@ -11,6 +11,27 @@ import 'data_table_source.dart';
 class DataTableController<T> extends ChangeNotifier {
   final DataTableSource<T> _dataSource;
 
+  /// Optional function that returns the **stable identity** of a row — used
+  /// by the realtime update path to apply `insert`/`update`/`delete` events
+  /// in place on `_currentResult.data` instead of issuing a full HTTP
+  /// refetch.
+  ///
+  /// When `null`, every realtime event falls back to [refresh] (current
+  /// behaviour, retained for backward compatibility). When provided, the
+  /// controller compares either `realtimeKeyExtractor(update.item)` against
+  /// the rows in the current page or matches `update.itemId.toString()`
+  /// against `realtimeKeyExtractor(row).toString()` for delete events.
+  ///
+  /// Typical usage:
+  ///
+  /// ```dart
+  /// DataTableController<User>(
+  ///   dataSource: source,
+  ///   realtimeKeyExtractor: (u) => u.id,
+  /// );
+  /// ```
+  final dynamic Function(T item)? realtimeKeyExtractor;
+
   // Estado atual
   DataTableResult<T>? _currentResult;
   DataTableRequest _currentRequest = const DataTableRequest();
@@ -22,8 +43,10 @@ class DataTableController<T> extends ChangeNotifier {
   Timer? _debounceTimer;
   StreamSubscription<DataTableUpdate<T>>? _updatesSubscription;
 
-  DataTableController({required DataTableSource<T> dataSource})
-    : _dataSource = dataSource {
+  DataTableController({
+    required DataTableSource<T> dataSource,
+    this.realtimeKeyExtractor,
+  }) : _dataSource = dataSource {
     _setupRealtimeUpdates();
   }
 
@@ -77,9 +100,9 @@ class DataTableController<T> extends ChangeNotifier {
     }
   }
 
-  // PAGINAÇÃO
+  // PAGINAÇÃO ─ page é 1-indexed (ver `DataTableRequest`).
   Future<void> goToPage(int page) async {
-    if (page < 0 || _isLoading) return;
+    if (page < 1 || _isLoading) return;
 
     final newRequest = _currentRequest.copyWith(page: page);
     await fetchData(newRequest);
@@ -121,9 +144,23 @@ class DataTableController<T> extends ChangeNotifier {
 
     final newRequest = _currentRequest.copyWith(
       sorts: existingSorts,
-      page: 0, // Reset para primeira página
+      page: 1, // Reset para primeira página (1-indexed)
     );
 
+    await fetchData(newRequest);
+  }
+
+  /// Replaces the entire sort stack with [sorts] (in priority order — the
+  /// first entry is the primary sort).
+  ///
+  /// Use this when the UI supports multi-column sorting (Shift+click) and
+  /// needs to express ordering across several columns at once. For a
+  /// single-column sort, use [sort].
+  Future<void> sortMulti(List<DataTableSort> sorts) async {
+    final newRequest = _currentRequest.copyWith(
+      sorts: List<DataTableSort>.of(sorts),
+      page: 1,
+    );
     await fetchData(newRequest);
   }
 
@@ -151,7 +188,7 @@ class DataTableController<T> extends ChangeNotifier {
 
     final newRequest = _currentRequest.copyWith(
       filters: existingFilters,
-      page: 0, // Reset para primeira página
+      page: 1, // Reset para primeira página (1-indexed)
     );
 
     await fetchData(newRequest);
@@ -162,7 +199,7 @@ class DataTableController<T> extends ChangeNotifier {
         .where((f) => f.field != field)
         .toList();
 
-    final newRequest = _currentRequest.copyWith(filters: newFilters, page: 0);
+    final newRequest = _currentRequest.copyWith(filters: newFilters, page: 1);
 
     await fetchData(newRequest);
   }
@@ -256,26 +293,126 @@ class DataTableController<T> extends ChangeNotifier {
     }
   }
 
+  /// Applies a realtime [update] to the current page in place when possible.
+  ///
+  /// - `refresh` always re-fetches.
+  /// - `insert` appends [DataTableUpdate.item] (and any [DataTableUpdate.items])
+  ///   to `_currentResult.data` and increments `totalCount`. The new rows
+  ///   land at the end of the current page; callers that want strict
+  ///   server-side ordering must call [refresh] themselves.
+  /// - `update` requires [realtimeKeyExtractor]. The matching row in the
+  ///   current page is replaced by [DataTableUpdate.item]. If the updated
+  ///   row is not on the current page, falls back to [refresh] (so other
+  ///   pages eventually see the change when navigated to).
+  /// - `delete` removes the matching row by [DataTableUpdate.itemId] or by
+  ///   key when [DataTableUpdate.item] is provided. `totalCount` is
+  ///   decremented. If the row is not on the current page but the
+  ///   `totalCount` decrement would change paging boundaries, falls back
+  ///   to [refresh].
+  ///
+  /// Falls back to [refresh] whenever [realtimeKeyExtractor] is `null` —
+  /// preserving the legacy behaviour for consumers that have not adopted
+  /// the in-place path yet.
   void _handleRealtimeUpdate(DataTableUpdate<T> update) {
-    if (_currentResult == null) return;
+    final result = _currentResult;
+    if (result == null) return;
 
     switch (update.type) {
       case DataTableUpdateType.refresh:
         refresh();
-        break;
+        return;
       case DataTableUpdateType.insert:
-        // TODO: Implementar inserção otimizada
-        refresh();
-        break;
+        _applyInsert(result, update);
+        return;
       case DataTableUpdateType.update:
-        // TODO: Implementar update otimizado
-        refresh();
-        break;
+        _applyUpdate(result, update);
+        return;
       case DataTableUpdateType.delete:
-        // TODO: Implementar remoção otimizada
-        refresh();
-        break;
+        _applyDelete(result, update);
+        return;
     }
+  }
+
+  void _applyInsert(DataTableResult<T> result, DataTableUpdate<T> update) {
+    final inserted = <T>[
+      if (update.item != null) update.item as T,
+      if (update.items != null) ...update.items!,
+    ];
+    if (inserted.isEmpty) {
+      refresh();
+      return;
+    }
+    _replaceResult(
+      data: [...result.data, ...inserted],
+      totalCount: result.totalCount + inserted.length,
+    );
+  }
+
+  void _applyUpdate(DataTableResult<T> result, DataTableUpdate<T> update) {
+    final extractor = realtimeKeyExtractor;
+    final item = update.item;
+    if (extractor == null || item == null) {
+      refresh();
+      return;
+    }
+    final targetKey = extractor(item);
+    final index =
+        result.data.indexWhere((row) => extractor(row) == targetKey);
+    if (index < 0) {
+      // The updated row is not on the current page — its effect will only
+      // be visible when the user navigates to its page, so re-fetching is
+      // the safest catch-all.
+      refresh();
+      return;
+    }
+    final newData = List<T>.of(result.data);
+    newData[index] = item;
+    _replaceResult(data: newData, totalCount: result.totalCount);
+  }
+
+  void _applyDelete(DataTableResult<T> result, DataTableUpdate<T> update) {
+    final extractor = realtimeKeyExtractor;
+    if (extractor == null) {
+      refresh();
+      return;
+    }
+    int index = -1;
+    if (update.itemId != null) {
+      final id = update.itemId!;
+      index = result.data.indexWhere(
+        (row) => extractor(row).toString() == id,
+      );
+    } else if (update.item != null) {
+      final key = extractor(update.item as T);
+      index = result.data.indexWhere((row) => extractor(row) == key);
+    }
+    if (index < 0) {
+      // Row lives on another page — re-fetch so totalCount and pages stay
+      // consistent.
+      refresh();
+      return;
+    }
+    final newData = List<T>.of(result.data)..removeAt(index);
+    _replaceResult(
+      data: newData,
+      totalCount: (result.totalCount - 1).clamp(0, 1 << 31),
+    );
+  }
+
+  void _replaceResult({
+    required List<T> data,
+    required int totalCount,
+  }) {
+    final result = _currentResult;
+    if (result == null) return;
+    _currentResult = DataTableResult<T>(
+      data: data,
+      totalCount: totalCount,
+      page: result.page,
+      pageSize: result.pageSize,
+      metadata: result.metadata,
+    );
+    notifyListeners();
   }
 
   @override

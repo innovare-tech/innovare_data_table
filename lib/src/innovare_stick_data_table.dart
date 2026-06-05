@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:innovare_data_table/src/data_column_config.dart';
+import 'package:innovare_data_table/src/data_sources/data_table_models.dart';
 import 'package:innovare_data_table/src/data_table_filters.dart';
 import 'package:innovare_data_table/src/data_table_theme.dart';
 import 'package:innovare_data_table/src/pure_resizable_header_cell.dart';
@@ -101,10 +103,20 @@ class StickyDataTable<T> extends StatefulWidget {
   final bool enableColumnDragDrop;
   final Function(int fromIndex, int toIndex)? onColumnReorder;
 
-  // Parâmetros para sort e filtros
+  // Parâmetros para sort e filtros (single-column — legacy API mantida).
   final String? currentSortField;
   final bool isAscending;
   final Function(String field, bool ascending)? onSort;
+
+  /// Multi-column sort stack (priority order). When non-empty, takes
+  /// precedence over [currentSortField]/[isAscending] for both the active
+  /// state and the priority badge (1, 2, 3 …) rendered next to the
+  /// direction icon.
+  final List<DataTableSort> activeSorts;
+
+  /// Sort intent callback exposing the Shift modifier (additive flag).
+  /// When provided, takes precedence over [onSort].
+  final OnSortRequested? onSortRequested;
   final List<ColumnFilterOption<T>> columnFilters;
   final Map<String, dynamic> columnFiltersState;
   final Function(String, dynamic) onColumnFilterChanged;
@@ -127,6 +139,8 @@ class StickyDataTable<T> extends StatefulWidget {
     this.currentSortField,
     this.isAscending = true,
     this.onSort,
+    this.activeSorts = const [],
+    this.onSortRequested,
     this.columnFilters = const [],
     this.columnFiltersState = const {},
     required this.onColumnFilterChanged,
@@ -557,7 +571,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
         color: widget.colors.surfaceVariant,
         boxShadow: _showLeftShadow ? [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.1),
+            color: widget.colors.shadow.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -580,7 +594,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
         color: widget.colors.surface,
         boxShadow: _showLeftShadow ? [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.1),
+            color: widget.colors.shadow.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -605,9 +619,9 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
                     ? widget.colors.primaryLight
                     : index.isEven
                     ? widget.colors.surface
-                    : widget.colors.surfaceVariant.withOpacity(0.3),
+                    : widget.colors.surfaceVariant.withValues(alpha: 0.3),
                 border: Border(bottom: BorderSide(
-                  color: widget.colors.outline.withOpacity(0.3),
+                  color: widget.colors.outline.withValues(alpha: 0.3),
                   width: 0.5,
                 )),
               ),
@@ -688,9 +702,9 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
                     ? widget.colors.primaryLight
                     : index.isEven
                     ? widget.colors.surface
-                    : widget.colors.surfaceVariant.withOpacity(0.3),
+                    : widget.colors.surfaceVariant.withValues(alpha: 0.3),
                 border: Border(bottom: BorderSide(
-                  color: widget.colors.outline.withOpacity(0.3),
+                  color: widget.colors.outline.withValues(alpha: 0.3),
                   width: 0.5,
                 )),
               ),
@@ -771,7 +785,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
-                            widget.colors.shadow.withOpacity(0.1),
+                            widget.colors.shadow.withValues(alpha: 0.1),
                             Colors.transparent,
                           ],
                         ),
@@ -791,7 +805,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
                           begin: Alignment.centerRight,
                           end: Alignment.centerLeft,
                           colors: [
-                            widget.colors.shadow.withOpacity(0.1),
+                            widget.colors.shadow.withValues(alpha: 0.1),
                             Colors.transparent,
                           ],
                         ),
@@ -848,9 +862,9 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
                               ? widget.colors.primaryLight
                               : index.isEven
                               ? widget.colors.surface
-                              : widget.colors.surfaceVariant.withOpacity(0.3),
+                              : widget.colors.surfaceVariant.withValues(alpha: 0.3),
                           border: Border(bottom: BorderSide(
-                            color: widget.colors.outline.withOpacity(0.3),
+                            color: widget.colors.outline.withValues(alpha: 0.3),
                             width: 0.5,
                           )),
                         ),
@@ -891,6 +905,8 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
           key: ValueKey('sticky_resizable_${column.field}'),
           column: column,
           index: index,
+          activeSorts: widget.activeSorts,
+          onSortRequested: widget.onSortRequested,
           theme: widget.theme,
           colors: widget.colors,
           density: widget.density,
@@ -913,6 +929,8 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
           key: ValueKey('sticky_pure_resizable_${column.field}'),
           column: column,
           index: index,
+          activeSorts: widget.activeSorts,
+          onSortRequested: widget.onSortRequested,
           theme: widget.theme,
           colors: widget.colors,
           density: widget.density,
@@ -946,12 +964,45 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: column.sortable && widget.onSort != null ? () {
-                final newAscending = widget.currentSortField == column.field
-                    ? !widget.isAscending
-                    : true;
-                widget.onSort!(column.field, newAscending);
-              } : null,
+              onTap: column.sortable &&
+                      (widget.onSort != null ||
+                          widget.onSortRequested != null)
+                  ? () {
+                      // Resolve direção atual: prefere o stack multi-sort,
+                      // cai pro single-sort legacy.
+                      bool? currentAscending;
+                      if (widget.activeSorts.isNotEmpty) {
+                        for (final s in widget.activeSorts) {
+                          if (s.field == column.field) {
+                            currentAscending = s.ascending;
+                            break;
+                          }
+                        }
+                      } else if (widget.currentSortField == column.field) {
+                        currentAscending = widget.isAscending;
+                      }
+                      final newAscending = currentAscending == null
+                          ? true
+                          : !currentAscending;
+
+                      final additive = HardwareKeyboard
+                          .instance.logicalKeysPressed
+                          .any(
+                        (k) => k == LogicalKeyboardKey.shiftLeft ||
+                            k == LogicalKeyboardKey.shiftRight,
+                      );
+
+                      if (widget.onSortRequested != null) {
+                        widget.onSortRequested!(
+                          field: column.field,
+                          ascending: newAscending,
+                          additive: additive,
+                        );
+                      } else {
+                        widget.onSort!(column.field, newAscending);
+                      }
+                    }
+                  : null,
               child: MouseRegion(
                 cursor: column.sortable ? SystemMouseCursors.click : SystemMouseCursors.basic,
                 child: Padding(
@@ -1031,7 +1082,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.left:
         return _showLeftShadow ? [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.08),
+            color: widget.colors.shadow.withValues(alpha: 0.08),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -1039,7 +1090,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.right:
         return _showRightShadow ? [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.08),
+            color: widget.colors.shadow.withValues(alpha: 0.08),
             blurRadius: 4,
             offset: const Offset(-2, 0),
           ),
@@ -1055,7 +1106,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.left:
         return _showLeftShadow ? [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.06),
+            color: widget.colors.shadow.withValues(alpha: 0.06),
             blurRadius: 4,
             offset: const Offset(2, 0),
           ),
@@ -1063,7 +1114,7 @@ class _StickyDataTableState<T> extends State<StickyDataTable<T>> {
       case StickyPosition.right:
         return _showRightShadow ? [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.06),
+            color: widget.colors.shadow.withValues(alpha: 0.06),
             blurRadius: 4,
             offset: const Offset(-2, 0),
           ),

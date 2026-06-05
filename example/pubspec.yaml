@@ -13,9 +13,20 @@ dependencies:
     sdk: flutter
   innovare_data_table:
     path: ../
+  innovare_design:
+    path: ../../innovare_design
+  http: ^1.1.0
   freezed: ^3.0.4
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
+
+# Local development: pin innovare_design to the sibling path so the
+# example builds against the same in-tree code as the package itself.
+# (`innovare_data_table` declares innovare_design via a git ref for
+# downstream apps; overriding here is the documented way to mix the two.)
+dependency_overrides:
+  innovare_design:
+    path: ../../innovare_design
 
 dev_dependencies:
   flutter_test:

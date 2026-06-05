@@ -363,7 +363,7 @@ class _QuickFiltersBarState<T> extends State<QuickFiltersBar<T>>
           color: widget.colors.surface,
           border: Border(
             bottom: BorderSide(
-              color: widget.colors.outline.withOpacity(0.2),
+              color: widget.colors.outline.withValues(alpha: 0.2),
               width: 0.5,
             ),
           ),
@@ -498,8 +498,8 @@ class _QuickFiltersBarState<T> extends State<QuickFiltersBar<T>>
                   ),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? widget.colors.onPrimary.withOpacity(0.25)
-                        : baseColor.withOpacity(0.1),
+                        ? widget.colors.onPrimary.withValues(alpha: 0.25)
+                        : baseColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(

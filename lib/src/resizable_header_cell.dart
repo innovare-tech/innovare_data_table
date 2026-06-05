@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:innovare_data_table/src/data_column_config.dart';
+import 'package:innovare_data_table/src/data_sources/data_table_models.dart';
 import 'package:innovare_data_table/src/data_table_filters.dart';
 import 'package:innovare_data_table/src/data_table_theme.dart';
+import 'package:innovare_data_table/src/pure_resizable_header_cell.dart' show OnSortRequested;
 
 // Controller para gerenciar larguras das colunas
 class ColumnResizeController extends ChangeNotifier {
@@ -68,10 +70,19 @@ class ResizableHeaderCell<T> extends StatefulWidget {
   final bool enableDragDrop;
   final bool enableResize;
 
-  // Parâmetros para sort
+  // Parâmetros para sort (single-column — legacy API mantida).
   final String? currentSortField;
   final bool isAscending;
   final Function(String field, bool ascending)? onSort;
+
+  /// Multi-column sort stack (priority order). When non-empty, takes
+  /// precedence over [currentSortField]/[isAscending] for the active
+  /// state and the priority badge (1, 2, 3 …).
+  final List<DataTableSort> activeSorts;
+
+  /// Sort intent callback that exposes the Shift modifier (additive flag).
+  /// When provided, takes precedence over [onSort].
+  final OnSortRequested? onSortRequested;
 
   const ResizableHeaderCell({
     super.key,
@@ -90,6 +101,8 @@ class ResizableHeaderCell<T> extends StatefulWidget {
     this.currentSortField,
     this.isAscending = true,
     this.onSort,
+    this.activeSorts = const [],
+    this.onSortRequested,
   });
 
   @override
@@ -156,12 +169,47 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
     super.dispose();
   }
 
+  bool? get _currentSortDirection {
+    if (widget.activeSorts.isNotEmpty) {
+      for (final s in widget.activeSorts) {
+        if (s.field == widget.column.field) return s.ascending;
+      }
+      return null;
+    }
+    if (widget.currentSortField == widget.column.field) {
+      return widget.isAscending;
+    }
+    return null;
+  }
+
+  int? get _sortPriority {
+    if (widget.activeSorts.length < 2) return null;
+    final idx =
+        widget.activeSorts.indexWhere((s) => s.field == widget.column.field);
+    return idx < 0 ? null : idx + 1;
+  }
+
   void _handleSort() {
-    if (!widget.column.sortable || widget.onSort == null) return;
+    if (!widget.column.sortable) return;
+    if (widget.onSort == null && widget.onSortRequested == null) return;
 
-    final isSorted = widget.currentSortField == widget.column.field;
-    final newAscending = isSorted ? !widget.isAscending : true;
+    final currentAscending = _currentSortDirection;
+    final newAscending =
+        currentAscending == null ? true : !currentAscending;
 
+    final additive = HardwareKeyboard.instance.logicalKeysPressed.any(
+      (k) => k == LogicalKeyboardKey.shiftLeft ||
+          k == LogicalKeyboardKey.shiftRight,
+    );
+
+    if (widget.onSortRequested != null) {
+      widget.onSortRequested!(
+        field: widget.column.field,
+        ascending: newAscending,
+        additive: additive,
+      );
+      return;
+    }
     widget.onSort!(widget.column.field, newAscending);
   }
 
@@ -258,7 +306,7 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
                                     borderRadius: BorderRadius.circular(1),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: widget.colors.primary.withOpacity(0.3),
+                                        color: widget.colors.primary.withValues(alpha: 0.3),
                                         blurRadius: 4,
                                         spreadRadius: 1,
                                       ),
@@ -323,11 +371,11 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
       width: double.infinity,
       decoration: BoxDecoration(
         color: isHovering
-            ? widget.colors.primaryLight.withOpacity(0.3)
+            ? widget.colors.primaryLight.withValues(alpha: 0.3)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         border: isHovering
-            ? Border.all(color: widget.colors.primary.withOpacity(0.5), width: 2)
+            ? Border.all(color: widget.colors.primary.withValues(alpha: 0.5), width: 2)
             : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -336,7 +384,9 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
   }
 
   Widget _buildHeaderContent(ColumnFilterOption<T>? filterOption) {
-    final isSorted = widget.currentSortField == widget.column.field;
+    final sortDirection = _currentSortDirection;
+    final isSorted = sortDirection != null;
+    final priority = _sortPriority;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -352,7 +402,7 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
               child: Icon(
                 Icons.drag_indicator,
                 size: 16,
-                color: widget.colors.onSurfaceVariant.withOpacity(0.7),
+                color: widget.colors.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -406,12 +456,23 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
                         alignment: Alignment.center,
                         child: Icon(
                           isSorted
-                              ? (widget.isAscending ? Icons.arrow_upward : Icons.arrow_downward)
+                              ? (sortDirection
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward)
                               : Icons.unfold_more,
                           size: 14,
                           color: isSorted ? widget.colors.primary : widget.colors.onSurfaceVariant,
                         ),
                       ),
+                      // Badge de prioridade em multi-sort (≥ 2 colunas
+                      // ativas no stack).
+                      if (priority != null) ...[
+                        const SizedBox(width: 2),
+                        _SortPriorityBadge(
+                          priority: priority,
+                          colors: widget.colors,
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -461,7 +522,7 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
           height: double.infinity,
           decoration: BoxDecoration(
             color: _isHoveringResize || _isResizing
-                ? widget.colors.primary.withOpacity(0.1)
+                ? widget.colors.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
           ),
@@ -473,7 +534,7 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
               decoration: BoxDecoration(
                 color: _isHoveringResize || _isResizing
                     ? widget.colors.primary
-                    : widget.colors.onSurfaceVariant.withOpacity(0.3),
+                    : widget.colors.onSurfaceVariant.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(1),
               ),
             ),
@@ -513,7 +574,7 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: widget.colors.primary.withOpacity(0.3),
+              color: widget.colors.primary.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -563,7 +624,7 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
       decoration: BoxDecoration(
         color: widget.colors.surface,
         border: Border.all(
-          color: widget.colors.primary.withOpacity(0.5),
+          color: widget.colors.primary.withValues(alpha: 0.5),
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
@@ -571,8 +632,44 @@ class _ResizableHeaderCellState<T> extends State<ResizableHeaderCell<T>>
       child: Center(
         child: Icon(
           Icons.drag_handle,
-          color: widget.colors.primary.withOpacity(0.7),
+          color: widget.colors.primary.withValues(alpha: 0.7),
           size: 20,
+        ),
+      ),
+    );
+  }
+}
+
+/// Mirror of the badge in `pure_resizable_header_cell.dart`. Kept private
+/// here to avoid leaking an internal widget; the two headers are siblings
+/// and the duplication is shallow.
+class _SortPriorityBadge extends StatelessWidget {
+  final int priority;
+  final DataTableColorScheme colors;
+
+  const _SortPriorityBadge({
+    required this.priority,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 14),
+      height: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colors.primary,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        priority.toString(),
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: colors.onPrimary,
+          height: 1,
         ),
       ),
     );

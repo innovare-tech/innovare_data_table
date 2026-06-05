@@ -81,14 +81,24 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
   }
 
   void _onFiltersChanged() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) return;
+    setState(() {});
 
-      // Atualizar search controller se necessário
-      final currentSearch = widget.controller.searchTerm ?? '';
-      if (_searchController.text != currentSearch) {
-        _searchController.text = currentSearch;
-      }
+    // Mirror the controller's search term into our `TextEditingController`
+    // **only when it diverges semantically** — i.e. when something other
+    // than the user typing changed it (preset load, `clearSearch`,
+    // `clearAllFilters`). The controller stores the term trimmed, but
+    // the user can legitimately have a trailing space mid-typing (e.g.
+    // "felipe " before completing the surname). If we re-assigned the
+    // text whenever the trimmed forms differ we would wipe that space
+    // and snap the caret back to the end every keystroke — which is
+    // what the "selects everything when I press space" report was.
+    final currentSearch = widget.controller.searchTerm ?? '';
+    if (_searchController.text.trim() != currentSearch.trim()) {
+      _searchController.value = TextEditingValue(
+        text: currentSearch,
+        selection: TextSelection.collapsed(offset: currentSearch.length),
+      );
     }
   }
 
@@ -132,7 +142,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
         color: widget.colors.surface,
         border: Border(
           bottom: BorderSide(
-            color: widget.colors.outline.withOpacity(0.08),
+            color: widget.colors.outline.withValues(alpha: 0.08),
             width: 1,
           ),
         ),
@@ -228,13 +238,13 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: _isQuickFiltersExpanded || hasActiveQuickFilters
-                ? widget.colors.primary.withOpacity(0.08)
+                ? widget.colors.primary.withValues(alpha: 0.08)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: _isQuickFiltersExpanded || hasActiveQuickFilters
-                  ? widget.colors.primary.withOpacity(0.2)
-                  : widget.colors.outline.withOpacity(0.3),
+                  ? widget.colors.primary.withValues(alpha: 0.2)
+                  : widget.colors.outline.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -323,10 +333,10 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
           ? Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: widget.colors.surfaceVariant.withOpacity(0.3),
+          color: widget.colors.surfaceVariant.withValues(alpha: 0.3),
           border: Border(
             bottom: BorderSide(
-              color: widget.colors.outline.withOpacity(0.08),
+              color: widget.colors.outline.withValues(alpha: 0.08),
               width: 1,
             ),
           ),
@@ -444,15 +454,15 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
           decoration: BoxDecoration(
             color: isActive
                 ? baseColor
-                : baseColor.withOpacity(0.08),
+                : baseColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: baseColor.withOpacity(isActive ? 1.0 : 0.3),
+              color: baseColor.withValues(alpha: isActive ? 1.0 : 0.3),
               width: isActive ? 2 : 1,
             ),
             boxShadow: isActive ? [
               BoxShadow(
-                color: baseColor.withOpacity(0.2),
+                color: baseColor.withValues(alpha: 0.2),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -483,8 +493,8 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? widget.colors.onPrimary.withOpacity(0.25)
-                        : baseColor.withOpacity(0.15),
+                        ? widget.colors.onPrimary.withValues(alpha: 0.25)
+                        : baseColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -510,7 +520,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: widget.colors.shadow.withOpacity(0.02),
+            color: widget.colors.shadow.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -530,20 +540,20 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
           ),
           hintText: widget.controller.config.searchPlaceholder,
           hintStyle: TextStyle(
-            color: widget.colors.onSurfaceVariant.withOpacity(0.7),
+            color: widget.colors.onSurfaceVariant.withValues(alpha: 0.7),
             fontSize: 14,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide(
-              color: widget.colors.outline.withOpacity(0.5),
+              color: widget.colors.outline.withValues(alpha: 0.5),
               width: 1,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide(
-              color: widget.colors.outline.withOpacity(0.3),
+              color: widget.colors.outline.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -592,13 +602,13 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: hasAdvancedFilters
-                ? widget.colors.primary.withOpacity(0.08)
+                ? widget.colors.primary.withValues(alpha: 0.08)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: hasAdvancedFilters
-                  ? widget.colors.primary.withOpacity(0.2)
-                  : widget.colors.outline.withOpacity(0.3),
+                  ? widget.colors.primary.withValues(alpha: 0.2)
+                  : widget.colors.outline.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -690,7 +700,7 @@ class _UnifiedFiltersBarState<T> extends State<UnifiedFiltersBar<T>>
         ),
       ),
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: widget.colors.primary.withOpacity(0.3)),
+        side: BorderSide(color: widget.colors.primary.withValues(alpha: 0.3)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

@@ -94,7 +94,7 @@ class _AccessibleDataCellState<T> extends State<AccessibleDataCell<T>>
             ),
             decoration: BoxDecoration(
               color: widget.isSelected
-                  ? Theme.of(context).primaryColor.withOpacity(0.1)
+                  ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
                   : null,
               border: widget.isFocused && widget.accessibilityConfig.enableFocusIndicators
                   ? Border.all(
@@ -246,7 +246,7 @@ class _AccessibleHeaderCellState<T> extends State<AccessibleHeaderCell<T>>
             ),
             decoration: BoxDecoration(
               color: widget.isSorted
-                  ? Theme.of(context).primaryColor.withOpacity(0.1)
+                  ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
                   : null,
               border: widget.isFocused && widget.accessibilityConfig.enableFocusIndicators
                   ? Border.all(

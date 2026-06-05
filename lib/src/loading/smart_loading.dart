@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart' hide DataTableSource;
 import 'package:innovare_data_table/src/data_sources/data_table_models.dart';
 import 'package:innovare_data_table/src/data_sources/data_table_source.dart';
@@ -248,8 +247,8 @@ class SmartLoadingManager<T> extends ChangeNotifier {
         }
       }
 
-      // Página anterior (se houver)
-      if (currentRequest.page > 0) {
+      // Página anterior (se houver) — 1-indexed, ver `DataTableRequest`.
+      if (currentRequest.page > 1) {
         final prevRequest = currentRequest.copyWith(
           page: currentRequest.page - 1,
         );
@@ -341,7 +340,6 @@ class SmartLoadingManager<T> extends ChangeNotifier {
 
   void _cleanExpiredCache() {
     final keysToRemove = <String>[];
-    final now = DateTime.now();
 
     _cache.forEach((key, entry) {
       if (entry.isExpired(config.cacheMaxAge)) {
@@ -527,7 +525,7 @@ class _SmartLoadingIndicatorState extends State<SmartLoadingIndicator>
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context).shadowColor.withOpacity(0.1),
+                          color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -578,7 +576,7 @@ class _SmartLoadingIndicatorState extends State<SmartLoadingIndicator>
                     value: _predictiveProgress.value,
                     backgroundColor: Colors.transparent,
                     valueColor: AlwaysStoppedAnimation(
-                      (widget.primaryColor ?? Theme.of(context).primaryColor).withOpacity(0.3),
+                      (widget.primaryColor ?? Theme.of(context).primaryColor).withValues(alpha: 0.3),
                     ),
                   ),
                 ),
@@ -641,9 +639,10 @@ class _PredictiveScrollWrapperState extends State<PredictiveScrollWrapper> {
       page: widget.currentRequest.page + 1,
     );
 
-    widget.loadingManager.loadData(nextRequest, silent: true).catchError((e) {
-      // Ignorar erros de predictive loading
-    });
+    // Ignorar erros de predictive loading — eles não devem afetar a UI.
+    unawaited(widget.loadingManager
+        .loadData(nextRequest, silent: true)
+        .then<void>((_) {}, onError: (Object _) {}));
   }
 
   @override

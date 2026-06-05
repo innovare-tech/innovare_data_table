@@ -1,6 +1,9 @@
 name: innovare_data_table
 description: A customizable data table widget for Flutter that supports dynamic theming, responsive layouts, and advanced features like sorting, filtering, and pagination.
-version: 0.0.18
+version: 0.1.0
+# Distributed via GitHub git+tag (not pub.dev). Required when consuming other
+# Innovare packages via git refs (e.g. innovare_design, innovare_core).
+publish_to: none
 homepage: https://github.com/innovare-tech/innovare_data_table
 repository: https://github.com/innovare-tech/innovare_data_table
 issue_tracker: https://github.com/innovare-tech/innovare_data_table/issues
@@ -18,16 +21,36 @@ dependencies:
     git:
       url: https://github.com/keelvin/kotlinish.git
       ref: main
+  # innovare_core: pinned to the same release branch the consumer apps
+  # (app-innv-bolao, app-innv-franchise-finance) already use. Previously
+  # pinned to `feature/ajustes-connect` which has since been deleted,
+  # forcing every consumer to declare a `dependency_overrides` block.
   innovare_core:
     git:
       url: https://github.com/innovare-tech/lib-innv-core.git
-      ref: feature/ajustes-connect
+      ref: release/2026-05-19_001
+  # innovare_design: optional integration. When present in the widget tree,
+  # the table picks its colors/density/typography from the host's design
+  # tokens (see lib/src/theme/innovare_design_adapter.dart). When absent,
+  # the table falls back to the Material ColorScheme — fully backward
+  # compatible.
+  innovare_design:
+    git:
+      url: https://github.com/innovare-tech/innovare_design.git
+      ref: v0.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: 5.0.0
   mockito: 5.4.4
+
+# Dev-only: lets the package iterate against the local copy of innovare_design
+# in the monorepo without going through tag-bump cycles. Apps consuming this
+# package via git ignore overrides and resolve the tag declared above.
+dependency_overrides:
+  innovare_design:
+    path: ../innovare_design
 
 flutter:
   uses-material-design: true
