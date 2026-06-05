@@ -228,6 +228,25 @@ class InnovareDataTable<T> extends StatefulWidget {
   /// `onSort` still fires alongside `onSortsChanged` for backwards
   /// compatibility — you can subscribe to either or both.
   final void Function(List<DataTableSort> sorts)? onSortsChanged;
+
+  /// Empty-state copy used when the table renders zero visible rows.
+  /// When the host installs `innovare_design`, these strings are
+  /// piped into an [InnvEmptyState] (medallion icon + title + message
+  /// + optional action). When the design system is absent, the
+  /// fallback Material layout uses the same strings so apps keep
+  /// looking consistent either way.
+  final String emptyTitle;
+  final String? emptyMessage;
+  final IconData emptyIcon;
+  final Widget? emptyAction;
+
+  /// Optional error message. When non-null and the data source has
+  /// not produced a result yet, the body renders an [InnvErrorState]
+  /// (or a Material fallback) with [onErrorRetry] as the retry action.
+  /// Apps that drive errors via their own state container can simply
+  /// pass these through.
+  final String? errorMessage;
+  final VoidCallback? onErrorRetry;
   final Widget Function(T item)? onRowTap;
   final bool isLoading;
   final bool enableSelection;
@@ -261,6 +280,12 @@ class InnovareDataTable<T> extends StatefulWidget {
     this.paginationEnabled = true,
     this.onSort,
     this.onSortsChanged,
+    this.emptyTitle = 'Nenhum dado encontrado',
+    this.emptyMessage = 'Tente ajustar os filtros ou adicionar novos dados',
+    this.emptyIcon = Icons.inbox_rounded,
+    this.emptyAction,
+    this.errorMessage,
+    this.onErrorRetry,
     this.onRowTap,
     this.isLoading = false,
     this.enableSelection = false,
@@ -976,7 +1001,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
           ),
         );
       },
-      child: visibleRows.isEmpty
+      child: widget.errorMessage != null
+          ? _buildErrorTable(theme, colors, density, visibleColumns)
+          : visibleRows.isEmpty
           ? _buildEmptyTable(theme, colors, density, visibleColumns)
           : (ResponsiveTableManager.isMobile(context) &&
                   widget.mobileConfig != null
@@ -2094,7 +2121,9 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
             ),
           );
         },
-        child: visibleRows.isEmpty
+        child: widget.errorMessage != null
+            ? _buildErrorTable(theme, colors, density, visibleColumns)
+            : visibleRows.isEmpty
             ? _buildEmptyTable(theme, colors, density, visibleColumns)
             : (isMobile && widget.mobileConfig != null
                 ? _buildMobileCards(visibleRows, colors)
@@ -2128,6 +2157,36 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               visibleColumns,
             ),
             Expanded(child: _buildEmpty(colors)),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Same shape as [_buildEmptyTable] but renders the error variant
+  /// in the body. Keeping the column header visible (instead of
+  /// replacing the entire pane) preserves layout continuity — the
+  /// user sees what they were looking at, plus an explanation +
+  /// retry CTA underneath.
+  Widget _buildErrorTable(
+    InnovareDataTableThemeData theme,
+    DataTableColorScheme colors,
+    DensityConfig density,
+    List<DataColumnConfig<T>> visibleColumns,
+  ) {
+    return AnimatedBuilder(
+      animation: _resizeController,
+      builder: (context, child) {
+        return Column(
+          children: [
+            _buildFixedRegularHeader(
+              theme,
+              colors,
+              density,
+              <T>[],
+              visibleColumns,
+            ),
+            Expanded(child: _buildError(colors)),
           ],
         );
       },
@@ -3028,75 +3087,123 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   Widget _buildEmpty(DataTableColorScheme colors) {
+    // When `innovare_design` is installed in the host, prefer the
+    // tokenized `InnvEmptyState`: medallion icon + title + message +
+    // optional action, with the design system's reveal motion. When
+    // it isn't installed, fall back to a Material layout that mirrors
+    // the same shape (icon → title → message → action) using the
+    // table's color scheme. The two paths share the props on
+    // `InnovareDataTable` (`emptyTitle`, `emptyMessage`, etc.) so apps
+    // only describe the empty state once.
+    final hasDesign = InnovareDesignTheme.maybeOf(context) != null;
+    if (hasDesign) {
+      return InnvEmptyState(
+        icon: widget.emptyIcon,
+        title: widget.emptyTitle,
+        message: widget.emptyMessage,
+        action: widget.emptyAction,
+      );
+    }
+
     return Center(
       child: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 500),
+        child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: Opacity(
-                      opacity: value,
-                      child: Icon(
-                        Icons.inbox_rounded,
-                        size: 64,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  );
-                },
+              Icon(
+                widget.emptyIcon,
+                size: 64,
+                color: colors.onSurfaceVariant,
               ),
               const SizedBox(height: 16),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                builder: (context, value, child) {
-                  return Transform.translate(
-                    offset: Offset(0, 20 * (1 - value)),
-                    child: Opacity(
-                      opacity: value,
-                      child: Text(
-                        'Nenhum dado encontrado',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: colors.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                },
+              Text(
+                widget.emptyTitle,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: colors.onSurface,
+                ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 1000),
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                builder: (context, value, child) {
-                  return Transform.translate(
-                    offset: Offset(0, 20 * (1 - value)),
-                    child: Opacity(
-                      opacity: value,
-                      child: Text(
-                        'Tente ajustar os filtros ou adicionar novos dados',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colors.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                },
+              if (widget.emptyMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.emptyMessage!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (widget.emptyAction != null) ...[
+                const SizedBox(height: 24),
+                widget.emptyAction!,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Renders an error state (medallion + title + message + retry
+  /// button) using [InnvErrorState] when the design system is
+  /// installed, otherwise a Material fallback. Invoked only when the
+  /// caller passes a non-null `errorMessage`.
+  Widget _buildError(DataTableColorScheme colors) {
+    final hasDesign = InnovareDesignTheme.maybeOf(context) != null;
+    if (hasDesign) {
+      return InnvErrorState(
+        message: widget.errorMessage,
+        onRetry: widget.onErrorRetry,
+      );
+    }
+    return Center(
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: colors.error,
               ),
+              const SizedBox(height: 16),
+              Text(
+                'Algo deu errado',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: colors.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (widget.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.errorMessage!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (widget.onErrorRetry != null) ...[
+                const SizedBox(height: 24),
+                FilledButton.tonalIcon(
+                  onPressed: widget.onErrorRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Tentar de novo'),
+                ),
+              ],
             ],
           ),
         ),

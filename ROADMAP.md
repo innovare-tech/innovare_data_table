@@ -303,15 +303,30 @@ da Onda 6) testes verdes.
 - [x] `test/cache_invalidation_test.dart`: **4/4 verdes** com fake
       `http.Client` que conta requisições.
 
-### Onda 4 — Primitivas do DS nas cells
+### Onda 4 — Primitivas do DS nas cells `[PARCIAL]`
 
-- [ ] Helper `InnvBadgeCell` ou `DataColumnConfig.badge(...)` que renderiza
-      `InnvBadge` semântica.
-- [ ] Helper `DataColumnConfig.action(...)` que renderiza `InnvButton.icon`.
+- [x] **`InnvColumns.badge<T>(...)`** (em `lib/src/columns/
+      innv_column_builders.dart`) — factory que builda
+      `DataColumnConfig` com `cellBuilder` renderizando `InnvBadge`.
+      `valueGetter` espelha o `labelOf` (sort/filter por display
+      text sem plumbing extra).
+- [x] **`InnvColumns.actions<T>(...)`** + `InnvRowAction<T>` model
+      class. Suporta `isVisible(item)`, `isEnabled(item)` e `danger`
+      por ação. Default width = `36 + 44*N`, locked.
+- [x] Estado vazio do widget core → `InnvEmptyState` quando o
+      design system está instalado, fallback Material com mesma
+      shape (icon → title → message → action) quando não está.
+- [x] Estado de erro → `InnvErrorState` com retry. Novas props
+      públicas em `InnovareDataTable`: `emptyTitle`, `emptyMessage`,
+      `emptyIcon`, `emptyAction`, `errorMessage`, `onErrorRetry`.
+- [x] `test/innv_column_builders_test.dart` (7 testes) + `test/
+      empty_error_state_test.dart` (5 testes).
 - [ ] `enhanced_search_field.dart`: substituir TextField interno por
-      `InnvTextField` (mantendo a API).
-- [ ] `EmptyTablePage` / estado vazio do widget core: usar `InnvEmptyState`.
-- [ ] Estado de erro: usar `InnvErrorState` com retry.
+      `InnvTextField` (mantendo a API). **PENDENTE** — não bloqueia
+      adoção, fica para sub-onda dedicada.
+- [ ] Lint cleanup completo (withOpacity → withValues, unused
+      declarations). **PENDENTE** — diff mecânico em ~40 sites,
+      fica para sub-onda dedicada para não inflar commits de feature.
 
 ### Onda 5 — Example showcase `[PARCIAL]`
 
@@ -443,6 +458,22 @@ flutter run -d chrome
   retrocompatibilidade. 12 testes novos em `test/realtime_updates_test.dart`
   com `_FakeSource` que conta `fetch()`. `flutter test`: 42/42 verdes
   (smoke 10 + page_indexing 20 + realtime 12).
+- **2026-06-05** — **Onda 4 (parcial) — Primitivas DS nas cells entregue**.
+  Novos helpers públicos `InnvColumns.badge<T>` / `InnvColumns.actions<T>`
+  (em `lib/src/columns/innv_column_builders.dart`) + classe pública
+  `InnvRowAction<T>` com flags `isVisible`/`isEnabled`/`danger`.
+  Empty state do widget core agora renderiza `InnvEmptyState` quando
+  o design system está presente (fallback Material com mesma shape
+  quando não). Estado de erro novo (`errorMessage` + `onErrorRetry`
+  + `_buildError`/`_buildErrorTable`) usando `InnvErrorState`. Props
+  públicas: `emptyTitle`/`emptyMessage`/`emptyIcon`/`emptyAction`/
+  `errorMessage`/`onErrorRetry`. Showcase novo no example:
+  `DsPrimitivesShowcase` (3 sub-páginas via SegmentedButton: badges,
+  actions com isVisible/isEnabled em ação, empty/error toggleável).
+  12 testes novos (innv_column_builders 7 + empty_error_state 5).
+  `flutter test`: **62/62 verdes**. Pendências da Onda 4 (não
+  bloqueiam adoção): `InnvTextField` no search field interno e lint
+  cleanup mecânico (`withOpacity` → `withValues`).
 - **2026-06-04** — **Onda 5 (parcial) — Example showcase reboot entregue**.
   `example/lib/shell/app_shell.dart` novo (AppShell + AppShellScope +
   ShellHeader) com preset selector (aurora/vibe/slate/lumen) + dark

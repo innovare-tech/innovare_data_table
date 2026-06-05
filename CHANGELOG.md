@@ -106,6 +106,39 @@ and the package follows [Semantic Versioning](https://semver.org/).
   legacy `onSort` (which keeps emitting just the primary). Useful
   for apps that mirror the sort state somewhere outside the table —
   a debug panel, a URL query string, a server-side API.
+- **Wave 4 — Design system primitives in cells**:
+  - `InnvColumns.badge(...)` factory: builds a `DataColumnConfig`
+    whose cell renders an `InnvBadge`. Caller maps each row to a
+    display label + `InnvStatusKind` (+ optional icon). `valueGetter`
+    mirrors the label so badge columns work with `sortable: true`
+    out of the box. Tokenized: every preset / brightness combo
+    looks correct without per-status colour wiring.
+  - `InnvColumns.actions(...)` factory: builds a trailing actions
+    column from a list of `InnvRowAction`s. Each action has an
+    `icon`, `tooltip`, `onPressed(item)`, plus optional
+    `isVisible(item)`, `isEnabled(item)` and `danger` flags. Default
+    column width scales with the number of actions and is locked
+    (non-resizable) so apps don't have to remember to pin it.
+  - `InnvRowAction<T>` model class exposed from the library barrel.
+  - `test/innv_column_builders_test.dart`: 7 tests covering
+    `valueGetter` mapping, badge widget rendering with the correct
+    kind, action visibility/enabled flags, danger colouring and the
+    default fixed-width resize config.
+- **Wave 4 — Empty & error states use design-system primitives**:
+  - New `InnovareDataTable` props: `emptyTitle`, `emptyMessage`,
+    `emptyIcon`, `emptyAction`, `errorMessage`, `onErrorRetry`.
+  - When `innovare_design` is installed in the host, the empty
+    state renders an `InnvEmptyState` (medallion + reveal motion);
+    the error state renders an `InnvErrorState` (danger-tinted
+    medallion + `InnvButton` retry). When the design system is
+    absent, both fall back to a Material layout driven by the same
+    props — apps describe the empty state once, get both paths.
+  - `errorMessage` takes precedence over the empty branch. The
+    header row is preserved in both states so the user keeps spatial
+    context.
+  - `test/empty_error_state_test.dart`: 5 tests covering both paths
+    (design-system + Material), the error-over-empty precedence
+    rule, retry button wiring and the non-empty happy path.
 - **`example/` showcase rebuilt (Wave 5)**: every page now lives on
   top of the design system. `AppShell` wraps the whole app, owns
   the active `InnvPreset` (aurora / vibe / slate / lumen) plus

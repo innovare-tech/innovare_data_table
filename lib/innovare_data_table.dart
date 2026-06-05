@@ -10,6 +10,7 @@ export 'src/data_sources/data_table_models.dart';
 export 'src/data_sources/data_table_source.dart';
 export 'src/data_sources/http_data_table_source.dart';
 export 'src/columns/column_management.dart';
+export 'src/columns/innv_column_builders.dart';
 export 'src/filters/filter_pills.dart';
 export 'src/filters/quick_filters.dart';
 export 'src/loading/smart_loading.dart';

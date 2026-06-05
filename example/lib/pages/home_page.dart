@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:innovare_design/innovare_design.dart';
 import 'package:innovare_data_table_example/pages/cache_invalidation_showcase.dart';
+import 'package:innovare_data_table_example/pages/ds_primitives_showcase.dart';
 import 'package:innovare_data_table_example/pages/empty_table_page.dart';
 import 'package:innovare_data_table_example/pages/innovare_test_page.dart';
 import 'package:innovare_data_table_example/pages/multi_sort_showcase.dart';
@@ -34,9 +35,10 @@ class HomePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionTitle(
-                  title: 'New craft (Wave 3)',
-                  subtitle: 'Realtime, multi-sort, smart cache invalidation '
-                      'and 1-indexed pagination.',
+                  title: 'New craft (Waves 3 & 4)',
+                  subtitle: 'Realtime, multi-sort, smart cache invalidation, '
+                      '1-indexed pagination — and design-system primitives '
+                      'inside the cells.',
                 ),
                 const SizedBox(height: InnvSpacing.lg),
                 _Grid(
@@ -64,6 +66,14 @@ class HomePage extends StatelessWidget {
                       body: 'Drop only the pages affected by a write via '
                           '`invalidateCache(where: ...)`.',
                       destination: const CacheInvalidationShowcase(),
+                    ),
+                    _ShowcaseCard(
+                      icon: Icons.palette_outlined,
+                      title: 'DS primitives in cells',
+                      subtitle: 'Wave 4',
+                      body: '`InnvColumns.badge` / `.actions` plus the '
+                          'tokenized empty + error states.',
+                      destination: const DsPrimitivesShowcase(),
                     ),
                   ],
                 ),
