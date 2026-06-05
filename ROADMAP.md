@@ -243,11 +243,22 @@ da Onda 6) testes verdes.
       request defaults, result boundaries, slicing local, controller flows
       e factories HTTP (Laravel + Django).
 
-#### 3.2 Realtime updates otimizados
+#### 3.2 Realtime updates otimizados `[PRONTO]`
 
-- [ ] Implementar `_applyInsert`, `_applyUpdate`, `_applyDelete` em
-      `_currentResult` sem refetch (similar a `updateItemWhere`).
-      Testar com mock stream.
+- [x] `DataTableController` ganhou parâmetro nomeado opcional
+      `realtimeKeyExtractor: dynamic Function(T)`.
+- [x] `_applyInsert`/`_applyUpdate`/`_applyDelete` implementados:
+  - `insert` anexa ao `_currentResult.data` e incrementa `totalCount`.
+  - `update` substitui in-place pelo match de key; off-page cai pro
+    `refresh()`.
+  - `delete` remove por `itemId` (string) ou pela key do `update.item`;
+    off-page cai pro `refresh()`.
+- [x] Fallback retrocompatível: sem `realtimeKeyExtractor`, update/delete
+      continuam fazendo `refresh()` (insert ainda funciona in-place porque
+      não precisa de key).
+- [x] `test/realtime_updates_test.dart`: **12/12 verdes** cobrindo todos
+      os caminhos + fallbacks com um `_FakeSource` que expõe
+      `StreamController` e conta `fetch()`.
 
 #### 3.3 Convergência de filtros
 
@@ -392,3 +403,11 @@ flutter run -d chrome
   CHANGELOG (apps que passavam `page: 0` precisam migrar). 20 testes novos
   em `test/page_indexing_test.dart`. `flutter test`: 30/30 verdes
   (smoke 10 + page_indexing 20).
+- **2026-06-04** — **Sub-onda 3.2 (realtime updates otimizados) entregue**.
+  `DataTableController` ganhou parâmetro opcional `realtimeKeyExtractor`.
+  Eventos `insert`/`update`/`delete` agora mutam `_currentResult` in-place
+  sem refetch HTTP quando há key disponível (ou quando `insert` traz
+  payload). Fallback automático para `refresh()` nos demais casos preserva
+  retrocompatibilidade. 12 testes novos em `test/realtime_updates_test.dart`
+  com `_FakeSource` que conta `fetch()`. `flutter test`: 42/42 verdes
+  (smoke 10 + page_indexing 20 + realtime 12).

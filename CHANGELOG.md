@@ -53,6 +53,20 @@ and the package follows [Semantic Versioning](https://semver.org/).
   convention end-to-end (request defaults, result boundary getters,
   `LocalDataTableSource` slicing, controller pagination/sort/filter
   resets, Laravel/Django factory parsers and URL builders).
+- `DataTableController.realtimeKeyExtractor` (optional, named) — when
+  provided, the controller applies `insert`/`update`/`delete` realtime
+  events in place on `_currentResult` (mutating the current page and
+  bumping `totalCount`) instead of issuing a full refetch. Falls back
+  to the legacy `refresh()` path when (a) the extractor is `null`,
+  (b) an `update` arrives for a row that's not on the current page,
+  (c) a `delete` arrives for a row that's not on the current page, or
+  (d) an `insert` event arrives with no payload.
+- `test/realtime_updates_test.dart`: 12 tests covering the new
+  realtime path — insert (single + batch), update in-place, update
+  off-page falling back to refresh, delete by `itemId` and by `item`,
+  delete off-page falling back, `refresh` event always refetching,
+  `notifyListeners` firing, and the legacy fallback when no
+  `realtimeKeyExtractor` is supplied.
 
 ### Changed
 - `innovare_core` git ref re-pinned to `release/2026-05-19_001` (the ref the
