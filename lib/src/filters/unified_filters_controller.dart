@@ -14,6 +14,20 @@ import 'package:innovare_data_table/src/filters/quick_filters.dart';
 class UnifiedFiltersController<T> extends ChangeNotifier {
   final UnifiedFiltersConfig<T> config;
   final DataTableController<T>? dataTableController;
+
+  /// Resolves a field name to a stringified value for an item. Used by
+  /// the local-data filter/search helpers (`applyFiltersToLocalData`,
+  /// `_applySearchToLocalData`, …).
+  ///
+  /// Historically there were **two** distinct slots that could carry a
+  /// fieldGetter — this top-level one and a second one nested inside
+  /// [UnifiedFiltersConfig.fieldGetter]. Forgetting to pass the
+  /// top-level one (very easy to miss when copy-pasting a
+  /// `UnifiedFiltersConfig.full(...)` example) made every local search
+  /// fall back to `item.toString().contains(...)`, which silently
+  /// returned no rows for any non-primitive `T`. To keep the API
+  /// permissive but un-trap-able, the constructor now resolves the
+  /// effective getter from either slot — see the body below.
   final String Function(T item, String field)? fieldGetter;
 
   // Estado interno
@@ -27,9 +41,9 @@ class UnifiedFiltersController<T> extends ChangeNotifier {
   UnifiedFiltersController({
     required this.config,
     this.dataTableController,
-    this.fieldGetter,
+    String Function(T item, String field)? fieldGetter,
     this.searchDebounceDelay = const Duration(milliseconds: 500), // ✅ DEBOUNCE PADRÃO DE 500ms
-  }) {
+  }) : fieldGetter = fieldGetter ?? config.fieldGetter {
     _initializeDefaultFilters();
   }
 

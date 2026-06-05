@@ -39,6 +39,10 @@ class _UnifiedFiltersShowcaseState extends State<UnifiedFiltersShowcase> {
     _rows = sampleEmployees(count: 60);
 
     _controller = UnifiedFiltersController<Employee>(
+      // The controller has its OWN top-level fieldGetter — distinct from
+      // the one nested inside the config. `applyFiltersToLocalData`
+      // looks at the top-level one only. Pass it here.
+      fieldGetter: _byField,
       config: UnifiedFiltersConfig<Employee>.full(
         quickFilters: const [
           QuickFiltersConfig<Employee>(
