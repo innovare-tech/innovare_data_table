@@ -5,7 +5,17 @@ All notable changes to `innovare_data_table` are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and the package follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.0] — 2026-06-05
+
+First minor bump on top of `v0.0.18`. Folds Waves 0 → 5 of the
+`innovare_design` adoption refactor: tokenized theme adapter, 1-indexed
+pagination (breaking), in-place realtime updates, multi-column sort UI,
+selective cache invalidation, design-system primitives in cells
+(`InnvColumns.badge` / `.actions`, tokenized empty + error states,
+`InnvTextField` in the unified search), filter convergence (the
+unified primitives are now public; the two duplicated top-level
+filter props are `@Deprecated`), and an `AppShell`-based example
+with 5 dedicated showcases. 73 tests, all green.
 
 ### BREAKING CHANGES
 
