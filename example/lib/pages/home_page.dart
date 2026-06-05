@@ -7,6 +7,7 @@ import 'package:innovare_data_table_example/pages/innovare_test_page.dart';
 import 'package:innovare_data_table_example/pages/multi_sort_showcase.dart';
 import 'package:innovare_data_table_example/pages/products_datatable_example.dart';
 import 'package:innovare_data_table_example/pages/realtime_showcase.dart';
+import 'package:innovare_data_table_example/pages/unified_filters_showcase.dart';
 import 'package:innovare_data_table_example/pages/sales_dashboard_page.dart';
 import 'package:innovare_data_table_example/pages/simple_http_test_page.dart';
 import 'package:innovare_data_table_example/pages/test_datasource_page.dart';
@@ -74,6 +75,14 @@ class HomePage extends StatelessWidget {
                       body: '`InnvColumns.badge` / `.actions` plus the '
                           'tokenized empty + error states.',
                       destination: const DsPrimitivesShowcase(),
+                    ),
+                    _ShowcaseCard(
+                      icon: Icons.filter_alt_outlined,
+                      title: 'Unified filters',
+                      subtitle: 'Wave 3.3',
+                      body: 'One `UnifiedFiltersController` drives '
+                          'chips, advanced dialog and search at once.',
+                      destination: const UnifiedFiltersShowcase(),
                     ),
                   ],
                 ),

@@ -15,6 +15,8 @@ export 'src/columns/innv_column_builders.dart';
 // docs/MIGRATING_FILTERS.md for the migration map.
 export 'src/filters/filter_models.dart';
 export 'src/filters/unified_filters_controller.dart';
+export 'src/filters/unified_filters_bar.dart';
+export 'src/filters/smart_filter_pills.dart';
 export 'src/filters/filter_pills.dart';
 export 'src/filters/quick_filters.dart';
 export 'src/loading/smart_loading.dart';
