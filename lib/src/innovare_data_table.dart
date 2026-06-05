@@ -328,6 +328,16 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   // `_currentPage` segue a convenção 1-indexed do `DataTableRequest`.
   // A primeira página é 1, nunca 0.
   int _currentPage = 1;
+
+  /// Sort stack em ordem de prioridade (primeiro = primário). Reflete a
+  /// mesma estrutura usada por `DataTableController.sortMulti`. A UI
+  /// renderiza um badge numérico 1/2/3 ao lado do ícone de direção quando
+  /// o stack tem ≥ 2 colunas (ver `_SortPriorityBadge` nos header cells).
+  ///
+  /// `_sortedField`/`_isAscending` são mantidos em sync com `_activeSorts
+  /// .first` para preservar a API legacy de `widget.onSort(field,
+  /// ascending)` e o caminho de ordenação local em `_applySorting`.
+  List<DataTableSort> _activeSorts = [];
   String? _sortedField;
   bool _isAscending = true;
   final ScrollController _scrollController = ScrollController();
@@ -599,8 +609,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       data = _applyAdvancedFilters(data);
     }
 
-    // Aplicar ordenação (se não estiver usando datasource)
-    if (widget.dataSource == null && _sortedField != null) {
+    // Aplicar ordenação (se não estiver usando datasource). Honra tanto
+    // o stack multi-sort (Shift+click) quanto o caminho legacy single-sort.
+    if (widget.dataSource == null &&
+        (_activeSorts.isNotEmpty || _sortedField != null)) {
       data = _applySorting(data);
     }
 
@@ -750,24 +762,42 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
   }
 
   List<T> _applySorting(List<T> data) {
-    if (_sortedField == null) return data;
+    // Quando o usuário ordena por múltiplas colunas (Shift+click), itera o
+    // `_activeSorts` na ordem de prioridade — o primeiro sort empata, o
+    // segundo desempata, e assim por diante. Fallback para o caminho legacy
+    // single-sort (`_sortedField`/`_isAscending`) quando o stack está
+    // vazio mas o caminho legacy foi disparado externamente (ex.: testes).
+    if (_activeSorts.isEmpty && _sortedField == null) return data;
 
-    final column = widget.columns.firstWhere(
-      (col) => col.field == _sortedField,
-    );
+    final sortsToApply = _activeSorts.isNotEmpty
+        ? _activeSorts
+        : <DataTableSort>[
+            DataTableSort(field: _sortedField!, ascending: _isAscending),
+          ];
 
+    // Copy defensively — `data` may come from an unmodifiable source
+    // (e.g. `const` rows passed by the consumer or a filtered slice
+    // backed by a const list).
+    data = List<T>.of(data);
     data.sort((a, b) {
-      final valueA = column.valueGetter(a);
-      final valueB = column.valueGetter(b);
+      for (final sort in sortsToApply) {
+        final column = widget.columns.firstWhere(
+          (col) => col.field == sort.field,
+        );
+        final valueA = column.valueGetter(a);
+        final valueB = column.valueGetter(b);
 
-      int comparison = 0;
-      if (valueA is Comparable && valueB is Comparable) {
-        comparison = valueA.compareTo(valueB);
-      } else {
-        comparison = valueA.toString().compareTo(valueB.toString());
+        int comparison = 0;
+        if (valueA is Comparable && valueB is Comparable) {
+          comparison = valueA.compareTo(valueB);
+        } else {
+          comparison = valueA.toString().compareTo(valueB.toString());
+        }
+        if (comparison != 0) {
+          return sort.ascending ? comparison : -comparison;
+        }
       }
-
-      return _isAscending ? comparison : -comparison;
+      return 0;
     });
 
     return data;
@@ -2383,13 +2413,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         enableResize: widget.enableColumnResize,
         currentSortField: _sortedField,
         isAscending: _isAscending,
-        onSort: (field, ascending) {
-          setState(() {
-            _sortedField = field;
-            _isAscending = ascending;
-            widget.onSort?.call(field, ascending);
-          });
-        },
+        activeSorts: _activeSorts,
+        onSortRequested: _handleSortRequested,
       );
     } else if (widget.enableColumnResize) {
       return PureResizableHeaderCell<T>(
@@ -2406,13 +2431,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         enableResize: widget.enableColumnResize,
         currentSortField: _sortedField,
         isAscending: _isAscending,
-        onSort: (field, ascending) {
-          setState(() {
-            _sortedField = field;
-            _isAscending = ascending;
-            widget.onSort?.call(field, ascending);
-          });
-        },
+        activeSorts: _activeSorts,
+        onSortRequested: _handleSortRequested,
       );
     } else {
       return _buildStaticHeaderCellFixed(column, currentWidth, colors, density);
@@ -2505,15 +2525,32 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
               child: GestureDetector(
                 onTap: column.sortable
                     ? () {
-                        setState(() {
-                          if (_sortedField == column.field) {
-                            _isAscending = !_isAscending;
-                          } else {
-                            _sortedField = column.field;
-                            _isAscending = true;
+                        // Direção atual a partir do stack multi-sort (ou
+                        // legacy single-sort como fallback).
+                        bool? currentAscending;
+                        for (final s in _activeSorts) {
+                          if (s.field == column.field) {
+                            currentAscending = s.ascending;
+                            break;
                           }
-                          widget.onSort?.call(_sortedField!, _isAscending);
-                        });
+                        }
+                        currentAscending ??= _sortedField == column.field
+                            ? _isAscending
+                            : null;
+                        final newAscending = currentAscending == null
+                            ? true
+                            : !currentAscending;
+                        final additive = HardwareKeyboard
+                            .instance.logicalKeysPressed
+                            .any(
+                          (k) => k == LogicalKeyboardKey.shiftLeft ||
+                              k == LogicalKeyboardKey.shiftRight,
+                        );
+                        _handleSortRequested(
+                          field: column.field,
+                          ascending: newAscending,
+                          additive: additive,
+                        );
                       }
                     : null,
                 child: MouseRegion(
@@ -2621,13 +2658,8 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       onColumnReorder: _reorderColumns,
       currentSortField: _sortedField,
       isAscending: _isAscending,
-      onSort: (field, ascending) {
-        setState(() {
-          _sortedField = field;
-          _isAscending = ascending;
-          widget.onSort?.call(field, ascending);
-        });
-      },
+      activeSorts: _activeSorts,
+      onSortRequested: _handleSortRequested,
       columnFilters: widget.columnFilters,
       columnFiltersState: _columnFilters,
       onColumnFilterChanged: _onColumnFilterChanged,
@@ -2812,6 +2844,56 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
         ],
       ),
     );
+  }
+
+  /// Sort intent recebido de um header cell. Aplica a regra de multi-sort:
+  ///
+  /// - **`additive: true`** (Shift+click): se a coluna já está no
+  ///   `_activeSorts`, alterna a direção (sem mover a posição na pilha).
+  ///   Senão, anexa ao final do stack.
+  /// - **`additive: false`** (clique simples): substitui o stack inteiro
+  ///   por `[DataTableSort(field, ascending)]`.
+  ///
+  /// Sincroniza `_sortedField`/`_isAscending` com o primeiro sort do stack
+  /// (preserva compat com `widget.onSort(field, ascending)` e com o caminho
+  /// local de `_applySorting`). Para apps que adotam multi-sort completo,
+  /// chama também `widget.onSortsChanged?(_activeSorts)` quando a prop
+  /// está presente — e propaga via `DataTableController.sortMulti` no
+  /// modo server-side.
+  void _handleSortRequested({
+    required String field,
+    required bool ascending,
+    required bool additive,
+  }) {
+    setState(() {
+      final next = List<DataTableSort>.of(_activeSorts);
+      final existingIdx = next.indexWhere((s) => s.field == field);
+
+      if (additive) {
+        if (existingIdx >= 0) {
+          // Alterna direção mantendo a posição no stack.
+          next[existingIdx] =
+              DataTableSort(field: field, ascending: ascending);
+        } else {
+          next.add(DataTableSort(field: field, ascending: ascending));
+        }
+      } else {
+        // Reset — single sort.
+        next
+          ..clear()
+          ..add(DataTableSort(field: field, ascending: ascending));
+      }
+
+      _activeSorts = next;
+      _sortedField = next.first.field;
+      _isAscending = next.first.ascending;
+    });
+
+    // Propaga ao backend / consumidor.
+    if (_useDataSource && _dataController != null) {
+      _dataController!.sortMulti(_activeSorts);
+    }
+    widget.onSort?.call(_sortedField!, _isAscending);
   }
 
   void _handleSort(String field, bool ascending) {

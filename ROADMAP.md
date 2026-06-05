@@ -270,15 +270,38 @@ da Onda 6) testes verdes.
   - `smartFilterPills` → vira UI display da unified.
   - Marcar deprecados onde aplicável (sem quebrar API).
 
-#### 3.4 Multi-sort UI
+#### 3.4 Multi-sort UI `[PRONTO]`
 
-- [ ] Shift+click no header adiciona coluna ao sort em vez de substituir.
-      Indicador visual (1, 2, 3 nas colunas ordenadas).
+- [x] `DataTableController.sortMulti(List<DataTableSort>)` substitui o
+      stack inteiro e reseta página para 1.
+- [x] `OnSortRequested` typedef compartilhado (campos `field`/`ascending`/
+      `additive`). Adicionado a `PureResizableHeaderCell`,
+      `ResizableHeaderCell`, `StickyDataTable`.
+- [x] Header tap detecta Shift via `HardwareKeyboard.instance
+      .logicalKeysPressed` e emite `additive: true`.
+- [x] `_SortPriorityBadge` interno em ambos header cells, renderizado
+      apenas quando o stack tem ≥ 2 colunas. Mostra 1/2/3 ao lado do
+      ícone de direção (cor `primary` do `DataTableColorScheme`).
+- [x] `InnovareDataTable._handleSortRequested` aplica regra: additive →
+      append-or-toggle; non-additive → reset. Sincroniza `_sortedField`/
+      `_isAscending` com o primário pra preservar `widget.onSort` e o
+      caminho local `_applySorting`.
+- [x] `_applySorting` itera o stack na ordem de prioridade (tie-breakers).
+      Bug pré-existente fixado: agora copia a lista antes de `sort()`
+      para tolerar `const`/unmodifiable rows.
+- [x] `test/multi_sort_test.dart`: **4/4 verdes**.
 
-#### 3.5 Cache invalidation
+#### 3.5 Cache invalidation `[PRONTO]`
 
-- [ ] `HttpDataTableSource.invalidateCache(predicate)` público para o
-      consumidor invalidar após write.
+- [x] `HttpDataTableSource.invalidateCache({where})` público. Sem
+      predicate → wipe total (equiv. `clearCache`). Com predicate sobre
+      `DataTableRequest` → remoção seletiva.
+- [x] Cache refatorado de `Map<String, DataTableResult<T>>` para
+      `Map<String, _CachedFetch<T>>` para preservar o request original.
+- [x] Getters públicos `cachedRequests` (Iterable) e `cacheLength` para
+      diagnóstico e testes.
+- [x] `test/cache_invalidation_test.dart`: **4/4 verdes** com fake
+      `http.Client` que conta requisições.
 
 ### Onda 4 — Primitivas do DS nas cells
 
@@ -411,3 +434,16 @@ flutter run -d chrome
   retrocompatibilidade. 12 testes novos em `test/realtime_updates_test.dart`
   com `_FakeSource` que conta `fetch()`. `flutter test`: 42/42 verdes
   (smoke 10 + page_indexing 20 + realtime 12).
+- **2026-06-04** — **Sub-ondas 3.4 (multi-sort UI) + 3.5 (invalidateCache)
+  entregues**. `DataTableController.sortMulti(...)` novo. Header cells
+  (`PureResizableHeaderCell`, `ResizableHeaderCell`, `StickyDataTable`)
+  ganharam `activeSorts`/`onSortRequested` + detectam Shift via
+  `HardwareKeyboard` + renderizam `_SortPriorityBadge` (1/2/3) em
+  multi-sort. `_applySorting` itera o stack como tie-breakers (e bug
+  pré-existente de `sort` em lista imutável foi corrigido). Cache do
+  `HttpDataTableSource` refatorado para `Map<String, _CachedFetch<T>>`
+  preservando o `DataTableRequest`, expondo `invalidateCache({where})` +
+  `cachedRequests` + `cacheLength`. 8 testes novos (multi_sort 4 + cache
+  4 com `http.Client` que conta requisições). `flutter test`: **50/50
+  verdes** (smoke 10 + page_indexing 20 + realtime 12 + multi_sort 4 +
+  cache 4).

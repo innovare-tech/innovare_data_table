@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:innovare_data_table/src/data_column_config.dart';
+import 'package:innovare_data_table/src/data_sources/data_table_models.dart';
 import 'package:innovare_data_table/src/data_table_filters.dart';
 import 'package:innovare_data_table/src/data_table_theme.dart';
 import 'package:innovare_data_table/src/resizable_header_cell.dart';
+
+/// Signal emitted by a header cell when the user requests a sort change.
+///
+/// [additive] is `true` when the click came with Shift held — meaning the
+/// user wants this column added to the existing sort stack instead of
+/// replacing it. Parents typically translate that into
+/// `DataTableController.sortMulti(...)` calls.
+typedef OnSortRequested = void Function({
+  required String field,
+  required bool ascending,
+  required bool additive,
+});
 
 // COMPONENTE PURO DE HEADER COM RESIZE (SEM DRAG & DROP)
 class PureResizableHeaderCell<T> extends StatefulWidget {
@@ -18,10 +31,19 @@ class PureResizableHeaderCell<T> extends StatefulWidget {
   final ColumnResizeController resizeController;
   final bool enableResize;
 
-  // Parâmetros para sort
+  // Parâmetros para sort (single-column — legacy API mantida).
   final String? currentSortField;
   final bool isAscending;
   final Function(String field, bool ascending)? onSort;
+
+  /// Multi-column sort stack (priority order). When non-empty, takes
+  /// precedence over [currentSortField]/[isAscending] for both the active
+  /// state and the priority badge (1, 2, 3 …).
+  final List<DataTableSort> activeSorts;
+
+  /// Sort intent callback that exposes the Shift modifier (additive flag).
+  /// When provided, takes precedence over [onSort].
+  final OnSortRequested? onSortRequested;
 
   const PureResizableHeaderCell({
     super.key,
@@ -38,6 +60,8 @@ class PureResizableHeaderCell<T> extends StatefulWidget {
     this.currentSortField,
     this.isAscending = true,
     this.onSort,
+    this.activeSorts = const [],
+    this.onSortRequested,
   });
 
   @override
@@ -127,12 +151,57 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
     super.dispose();
   }
 
+  /// Returns the current sort direction for [widget.column], or `null` if
+  /// the column isn't currently sorted. Reads from [activeSorts] first
+  /// (multi-sort path) and falls back to [currentSortField]/[isAscending]
+  /// (legacy single-sort path).
+  bool? get _currentSortDirection {
+    if (widget.activeSorts.isNotEmpty) {
+      for (final s in widget.activeSorts) {
+        if (s.field == widget.column.field) return s.ascending;
+      }
+      return null;
+    }
+    if (widget.currentSortField == widget.column.field) {
+      return widget.isAscending;
+    }
+    return null;
+  }
+
+  /// 1-indexed position of this column in [activeSorts], or `null` when the
+  /// column isn't part of a multi-sort stack. Used to render the priority
+  /// badge (1, 2, 3 …) next to the direction icon.
+  int? get _sortPriority {
+    if (widget.activeSorts.length < 2) return null;
+    final idx =
+        widget.activeSorts.indexWhere((s) => s.field == widget.column.field);
+    return idx < 0 ? null : idx + 1;
+  }
+
   void _handleSort() {
-    if (!widget.column.sortable || widget.onSort == null) return;
+    if (!widget.column.sortable) return;
+    if (widget.onSort == null && widget.onSortRequested == null) return;
 
-    final isSorted = widget.currentSortField == widget.column.field;
-    final newAscending = isSorted ? !widget.isAscending : true;
+    final currentAscending = _currentSortDirection;
+    final newAscending =
+        currentAscending == null ? true : !currentAscending;
 
+    // Shift+click → additive multi-sort. Read directly from
+    // HardwareKeyboard since GestureDetector doesn't expose modifiers.
+    final additive = HardwareKeyboard.instance.logicalKeysPressed.any(
+      (k) => k == LogicalKeyboardKey.shiftLeft ||
+          k == LogicalKeyboardKey.shiftRight,
+    );
+
+    if (widget.onSortRequested != null) {
+      widget.onSortRequested!(
+        field: widget.column.field,
+        ascending: newAscending,
+        additive: additive,
+      );
+      return;
+    }
+    // Legacy single-sort callback — no Shift information forwarded.
     widget.onSort!(widget.column.field, newAscending);
   }
 
@@ -293,7 +362,9 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
   }
 
   Widget _buildHeaderContent(ColumnFilterOption<T>? filterOption) {
-    final isSorted = widget.currentSortField == widget.column.field;
+    final sortDirection = _currentSortDirection;
+    final isSorted = sortDirection != null;
+    final priority = _sortPriority;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -339,12 +410,23 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
                         alignment: Alignment.center,
                         child: Icon(
                           isSorted
-                              ? (widget.isAscending ? Icons.arrow_upward : Icons.arrow_downward)
+                              ? (sortDirection
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward)
                               : Icons.unfold_more,
                           size: 14,
                           color: isSorted ? widget.colors.primary : widget.colors.onSurfaceVariant,
                         ),
                       ),
+                      // Badge de prioridade quando a coluna participa de um
+                      // multi-sort (≥ 2 colunas ativas).
+                      if (priority != null) ...[
+                        const SizedBox(width: 2),
+                        _SortPriorityBadge(
+                          priority: priority,
+                          colors: widget.colors,
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -427,5 +509,42 @@ class _PureResizableHeaderCellState<T> extends State<PureResizableHeaderCell<T>>
       default:
         return TextAlign.left;
     }
+  }
+}
+
+/// Small numeric badge rendered next to a sorted column's direction icon
+/// when the table is being sorted by ≥ 2 columns at once. Tells the user
+/// the priority of this column inside the sort stack (1 = primary,
+/// 2 = tie-breaker, etc.).
+class _SortPriorityBadge extends StatelessWidget {
+  final int priority;
+  final DataTableColorScheme colors;
+
+  const _SortPriorityBadge({
+    required this.priority,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 14),
+      height: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colors.primary,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        priority.toString(),
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: colors.onPrimary,
+          height: 1,
+        ),
+      ),
+    );
   }
 }

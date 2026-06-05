@@ -150,6 +150,20 @@ class DataTableController<T> extends ChangeNotifier {
     await fetchData(newRequest);
   }
 
+  /// Replaces the entire sort stack with [sorts] (in priority order — the
+  /// first entry is the primary sort).
+  ///
+  /// Use this when the UI supports multi-column sorting (Shift+click) and
+  /// needs to express ordering across several columns at once. For a
+  /// single-column sort, use [sort].
+  Future<void> sortMulti(List<DataTableSort> sorts) async {
+    final newRequest = _currentRequest.copyWith(
+      sorts: List<DataTableSort>.of(sorts),
+      page: 1,
+    );
+    await fetchData(newRequest);
+  }
+
   // FILTROS
   Future<void> addFilter(
     String field,

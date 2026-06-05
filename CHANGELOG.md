@@ -67,6 +67,40 @@ and the package follows [Semantic Versioning](https://semver.org/).
   delete off-page falling back, `refresh` event always refetching,
   `notifyListeners` firing, and the legacy fallback when no
   `realtimeKeyExtractor` is supplied.
+- `DataTableController.sortMulti(List<DataTableSort>)`: replaces the
+  whole sort stack at once (companion to the existing single-column
+  `sort(field, ascending)`). Resets pagination to page 1.
+- **Multi-column sort UI** in `InnovareDataTable` / `StickyDataTable` /
+  `PureResizableHeaderCell` / `ResizableHeaderCell`:
+  - New optional fields `activeSorts: List<DataTableSort>` and
+    `onSortRequested: OnSortRequested?` on every header cell variant.
+  - Header tap reads `HardwareKeyboard.instance.logicalKeysPressed`
+    and emits `additive: true` when Shift is held. The parent state
+    appends to the stack instead of replacing it.
+  - When the stack has ≥ 2 columns, each sorted header renders a
+    numeric badge (1, 2, 3 …) next to the direction icon, indicating
+    the column's priority in the sort.
+  - Local-mode `_applySorting` honours the stack: the primary sort
+    decides the order, subsequent entries act as tie-breakers.
+  - The legacy `widget.onSort(field, ascending)` callback keeps
+    firing with the **primary** sort, so apps that haven't adopted
+    multi-sort don't need to change anything.
+- `test/multi_sort_test.dart`: 4 tests covering
+  `DataTableController.sortMulti` (pagination reset, full-stack
+  replacement) and `InnovareDataTable` Shift+click semantics (simple
+  tap, additive tap, non-additive replacement of the primary).
+- `HttpDataTableSource.invalidateCache({where})`: public API to drop
+  cached responses selectively. Without a predicate, equivalent to
+  `clearCache()`. With a predicate, evaluates against the original
+  `DataTableRequest` that produced each cached entry — lets apps
+  invalidate just the pages affected by a write (e.g. after editing
+  an item, invalidate every cached page whose filter matches that
+  item's status). Companions: `cachedRequests` getter (iterable of
+  the original requests) and `cacheLength` getter.
+- `test/cache_invalidation_test.dart`: 4 tests using a counting
+  `http.Client` so each assertion verifies both the cache state and
+  the network impact (e.g. an unaffected entry must not refetch
+  after a targeted invalidation).
 
 ### Changed
 - `innovare_core` git ref re-pinned to `release/2026-05-19_001` (the ref the
