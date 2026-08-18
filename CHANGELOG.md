@@ -5,6 +5,26 @@ All notable changes to `innovare_data_table` are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/),
 and the package follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] — 2026-08-18
+
+Patch release. Corrige o toque nos cards do modo mobile.
+
+### Fixed
+
+- **O card do modo mobile não abria o detalhe.** `_buildMobileCards` entregava
+  `onRowTap` — um `Widget Function(T)`, builder de célula que nenhum consumidor
+  do workspace preenche — onde `MobileCardsView` espera o manipulador de toque.
+  O campo certo é `onRowTapCallback`, o `void Function(T)` que todas as listas
+  já passam. O `InkWell` do card recebia `onTap: null`: em telefone a lista
+  inteira ficava inclicável, sem erro e sem aviso, em todos os produtos.
+
+  O erro não aparecia porque `MobileCardsView.onItemTap` estava tipado como
+  `Function(T item)?` — sem tipo de retorno —, e um `Widget Function(T)`
+  type-checa nessa assinatura. O tipo passou a ser `void Function(T item)?`,
+  que rejeita o builder em tempo de compilação.
+
+  Sem mudança de API: `onRowTap` continua declarado e ninguém o usava.
+
 ## [0.1.1] — 2026-06-05
 
 Patch release. Fixes a render bug in `InnvColumns.badge` that surfaced
