@@ -45,7 +45,10 @@ class MobileCardsView<T> extends StatelessWidget {
   final bool enableSelection;
   final Set<T> selectedItems;
   final Function(T item)? onSelectionChanged;
-  final Function(T item)? onItemTap;
+  /// Tipado com retorno `void` de propósito: com o `Function(T)?` anterior,
+  /// um builder `Widget Function(T)` type-checava aqui e o campo errado
+  /// passava sem erro.
+  final void Function(T item)? onItemTap;
   final DataTableColorScheme colors;
   final ScrollController? scrollController;
 

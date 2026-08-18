@@ -2243,7 +2243,10 @@ class _InnovareDataTableState<T> extends State<InnovareDataTable<T>>
       enableSelection: widget.enableSelection,
       selectedItems: _selectedItems,
       onSelectionChanged: _toggleSelection,
-      onItemTap: widget.onRowTap,
+      // `onRowTapCallback`, e NÃO `onRowTap`: este último é um
+      // `Widget Function(T)` (builder de célula) que ninguém preenche, e o
+      // toque no card virava `onTap: null` — lista inteira morta em telefone.
+      onItemTap: widget.onRowTapCallback,
       scrollController: _scrollController,
     );
   }
